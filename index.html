@@ -1882,56 +1882,71 @@ function calcKeyHandler(e) {
 }
 
 // ── Voice input ────────────────────────────────────────────────
-let recognition = null;
+let recognition  = null;
+let voiceStopped = false;
+let voiceFinal   = '';
 
-window.startVoiceInput = function() {
+function _startRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Voice input not supported. Try Chrome or Edge.'); return; }
-
   recognition = new SR();
-  recognition.continuous      = false;
-  recognition.interimResults  = true;
-  recognition.lang            = 'en-US';
-
-  document.getElementById('listenStatus').textContent = 'Listening…';
-  document.getElementById('voiceLive').textContent    = 'Speak now — e.g. "coffee for 45 kroner"';
-  document.getElementById('micRing').classList.remove('idle');
-  document.getElementById('listeningModal').classList.add('open');
+  recognition.continuous     = true;
+  recognition.interimResults = true;
+  recognition.lang           = 'en-US';
 
   recognition.onresult = function(e) {
-    let interim = '', final = '';
+    let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
-      e.results[i].isFinal ? (final += t) : (interim += t);
+      if (e.results[i].isFinal) voiceFinal += t + ' ';
+      else interim += t;
     }
-    document.getElementById('voiceLive').textContent = final || interim || '…';
+    document.getElementById('voiceLive').textContent = (voiceFinal + interim).trim() || '…';
   };
 
   recognition.onend = function() {
-    const heard = document.getElementById('voiceLive').textContent.trim();
-    document.getElementById('listeningModal').classList.remove('open');
-    if (heard && heard !== 'Speak now — e.g. "coffee for 45 kroner"' && heard !== '…') {
-      showVoiceSuggestion(heard);
+    if (voiceStopped) {
+      const heard = (voiceFinal || document.getElementById('voiceLive').textContent).trim();
+      document.getElementById('listeningModal').classList.remove('open');
+      document.getElementById('micRing').classList.add('idle');
+      if (heard && heard !== 'Speak now — e.g. "coffee for 45 kroner"' && heard !== '…') {
+        showVoiceSuggestion(heard);
+      } else {
+        showToast('Nothing heard — please try again.');
+      }
     } else {
-      showToast('No speech detected — please try again.');
+      // browser killed recognition early (silence timeout) — restart silently
+      try { recognition.start(); } catch(_) {}
     }
   };
 
   recognition.onerror = function(e) {
+    if (e.error === 'no-speech') return; // browser will fire onend and we restart
+    voiceStopped = true;
     document.getElementById('micRing').classList.add('idle');
     document.getElementById('listenStatus').textContent = 'Error';
     setTimeout(() => document.getElementById('listeningModal').classList.remove('open'), 800);
-    if (e.error === 'not-allowed')     showToast('Microphone access denied.');
-    else if (e.error === 'no-speech')  showToast('No speech detected — please try again.');
-    else                               showToast('Voice error: ' + e.error);
+    if (e.error === 'not-allowed') showToast('Microphone access denied.');
+    else showToast('Voice error: ' + e.error);
   };
 
-  try { recognition.start(); }
-  catch(e) { showToast('Could not start microphone.'); }
+  try { recognition.start(); } catch(e) { showToast('Could not start microphone.'); }
+}
+
+window.startVoiceInput = function() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice input not supported. Try Chrome or Edge.'); return; }
+  voiceStopped = false;
+  voiceFinal   = '';
+  document.getElementById('listenStatus').textContent = 'Listening…';
+  document.getElementById('voiceLive').textContent    = 'Speak now — e.g. "coffee for 45 kroner"';
+  document.getElementById('micRing').classList.remove('idle');
+  document.getElementById('listeningModal').classList.add('open');
+  _startRecognition();
 };
 
 window.stopListening = function() {
-  if (recognition) { recognition.stop(); recognition = null; }
+  voiceStopped = true;
+  if (recognition) { try { recognition.stop(); } catch(_) {} recognition = null; }
 };
 
 function showVoiceSuggestion(transcript) {
@@ -2032,7 +2047,7 @@ function guessCategory(text) {
 }
 
 // ── Close modals on backdrop click ─────────────────────────────
-['budgetModal','editModal','incomeEditModal','catsModal','settingsModal','listeningModal','voiceModal','calcModal'].forEach(id => {
+['budgetModal','editModal','incomeEditModal','catsModal','settingsModal','listeningModal','calcModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) {
       this.classList.remove('open');
