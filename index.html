@@ -286,6 +286,19 @@ textarea { resize: vertical; min-height: 58px; }
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--ink); color: var(--paper); padding: 0.7rem 1.5rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500; z-index: 300; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
+/* ── Tip banner ─────────────────────────────────────────────── */
+.tip-banner { position: fixed; bottom: 1.75rem; left: 50%; transform: translateX(-50%) translateY(calc(100% + 3rem)); transition: transform 0.4s cubic-bezier(0.34,1.36,0.64,1); z-index: 150; width: min(500px, calc(100vw - 2rem)); background: var(--ink); color: var(--paper); border-radius: 16px; padding: 1.2rem 1.4rem 1rem; box-shadow: 0 8px 40px rgba(0,0,0,0.22); pointer-events: auto; }
+.tip-banner.show { transform: translateX(-50%) translateY(0); }
+.tip-header { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.55rem; }
+.tip-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.55; }
+.tip-counter { font-size: 0.7rem; opacity: 0.4; margin-left: auto; }
+.tip-text { font-size: 0.88rem; line-height: 1.55; opacity: 0.93; margin-bottom: 0.9rem; }
+.tip-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
+.tip-btn { background: rgba(255,255,255,0.12); border: none; color: var(--paper); padding: 0.38rem 0.9rem; border-radius: 99px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; white-space: nowrap; }
+.tip-btn:hover { background: rgba(255,255,255,0.22); }
+.tip-btn.accent { background: var(--accent); }
+.tip-btn.accent:hover { opacity: 0.88; }
+
 /* ── Login overlay ──────────────────────────────────────────── */
 .login-overlay { position: fixed; inset: 0; background: var(--paper); z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
 .login-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; box-shadow: 0 12px 48px rgba(0,0,0,0.13); }
@@ -1007,6 +1020,20 @@ textarea { resize: vertical; min-height: 58px; }
 
 <div class="toast" id="toast"></div>
 
+<!-- Tip Banner -->
+<div class="tip-banner" id="tipBanner">
+  <div class="tip-header">
+    <span>💡</span>
+    <span class="tip-label">Tip</span>
+    <span class="tip-counter" id="tipCounter"></span>
+  </div>
+  <div class="tip-text" id="tipText"></div>
+  <div class="tip-actions">
+    <button class="tip-btn" onclick="dismissTip()">Got it</button>
+    <button class="tip-btn accent" onclick="nextTip()">Next tip →</button>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
@@ -1618,7 +1645,7 @@ function startListener() {
     setSyncStatus('synced', 'Synced');
     const overlay = document.getElementById('loadingOverlay');
     overlay.classList.add('hidden');
-    setTimeout(() => overlay.style.display = 'none', 500);
+    setTimeout(() => { overlay.style.display = 'none'; showTipBanner(); }, 500);
   }, err => {
     console.error(err);
     setSyncStatus('error', 'Sync error');
@@ -2569,6 +2596,67 @@ function guessCategory(text) {
     }
   });
 });
+
+// ── Tips system ────────────────────────────────────────────────
+const TIPS = [
+  { icon: '🎤', text: 'Voice entry: tap the mic icon and say something like "coffee for 45 kroner" — the app auto-fills the name, amount, category and today\'s date for you to confirm.' },
+  { icon: '➕', text: 'New category on the fly: when adding an expense, tap + New next to the category dropdown to create a brand-new category without leaving the form.' },
+  { icon: '🧮', text: 'Built-in calculator: tap the calculator icon in the header (or the small calc button next to any amount field) to do quick maths before entering a value.' },
+  { icon: '📅', text: 'Custom date range: in History, tap the Custom tab and pick any From → To dates. All summary cards, charts and category breakdowns update to match that period.' },
+  { icon: '📆', text: 'Day-of-week filter: tap the Mon–Sun pills in History to see only entries from specific weekdays — handy for spotting weekend or commute spending patterns.' },
+  { icon: '💰', text: 'Track income: switch to the Record Income tab in the add form to log salary, repayments, gifts or bonuses. Net balance updates automatically each month.' },
+  { icon: '🌙', text: 'Dark mode: tap the ☀/🌙 icon in the top-right to toggle themes. Your preference is remembered across sessions.' },
+  { icon: '📤', text: 'Export: scroll to History and use ↓ CSV to download a spreadsheet, or ⎙ Print/PDF to save or print a formatted record of your expenses.' },
+  { icon: '💳', text: 'Monthly budget: tap Edit next to the budget bar to set a spending limit. The bar turns orange at 75 % and red when you go over — a clear visual warning.' },
+  { icon: '🔁', text: 'Recurring expenses: check the Recurring box when adding a subscription or regular bill, then use the Recurring only filter in History to review them all at once.' },
+  { icon: '🎨', text: 'Edit categories: tap Manage next to the category breakdown to rename, recolor or delete any expense or income category. Renames apply to all existing entries automatically.' },
+  { icon: '📅', text: 'Custom month cycle: in Settings, set your cycle start day (e.g. 25) so the "month" period runs 25th–24th instead of 1st–31st — great for salary cycles.' },
+  { icon: '🏠', text: 'Default view: choose your preferred opening period (Today / Week / Month / Year / All) in Settings. The app always starts on the view most useful to you.' },
+  { icon: '🔍', text: 'History search: the search bar scans expense names, income descriptions, notes and categories simultaneously — just type a keyword to filter instantly.' },
+  { icon: '📝', text: 'Expense notes: expand the Notes field when adding an expense to jot down extra detail (e.g. "team lunch, receipt #42"). Notes are searchable in History.' },
+  { icon: '⚖️', text: 'Filter by type: use the All / Expenses / Income pills above the History list to show only one kind of entry — useful when reviewing just your income or just your spending.' },
+  { icon: '🗓', text: 'Exact-date filter: pick a specific date from the date picker in the History filter bar to see only entries from that one day.' },
+  { icon: '✕', text: 'Clear all filters: if History looks unexpectedly empty, tap ✕ Clear all (appears in the filter bar whenever any filter is active) to reset everything at once.' },
+  { icon: '📊', text: 'Spending chart: the bar chart shows monthly totals for the last 6 months — or, when Custom date range is active, for every month within your chosen range.' },
+  { icon: '🔒', text: 'Multi-user login: go to Settings → enable Require Login → add a username and password. Each household member gets their own account on the shared budget.' },
+  { icon: '👥', text: 'Adding users: once login is enabled, open Settings at any time to add more users. Existing users are never signed out when you add someone new.' },
+  { icon: '🏷️', text: 'Income categories: tap Manage next to the category breakdown, then switch to the Income tab to add, rename or recolor income categories (Salary, Freelance, etc.).' },
+  { icon: '💡', text: 'Net balance: the Net Balance card on the summary grid shows income minus expenses for the current period — green means surplus, red means deficit.' },
+  { icon: '📱', text: 'Add to home screen: on mobile, use your browser\'s "Add to Home Screen" option to install Expensio as an app icon for quick one-tap access.' },
+];
+
+let _tipIndex  = 0;
+let _tipTimer  = null;
+
+function _renderTip() {
+  const tip = TIPS[_tipIndex];
+  document.getElementById('tipText').textContent    = tip.icon + '  ' + tip.text;
+  document.getElementById('tipCounter').textContent = (_tipIndex + 1) + ' / ' + TIPS.length;
+}
+
+function showTipBanner() {
+  // Once per browser session
+  if (sessionStorage.getItem('expensio_tip_shown')) return;
+  sessionStorage.setItem('expensio_tip_shown', '1');
+  // Resume from last tip seen
+  _tipIndex = Math.min(parseInt(localStorage.getItem('expensio_tip_idx') || '0', 10), TIPS.length - 1);
+  _renderTip();
+  setTimeout(() => document.getElementById('tipBanner').classList.add('show'), 2800);
+  _tipTimer = setTimeout(dismissTip, 18000); // auto-hide after 18 s
+}
+
+window.nextTip = function() {
+  _tipIndex = (_tipIndex + 1) % TIPS.length;
+  localStorage.setItem('expensio_tip_idx', _tipIndex);
+  _renderTip();
+  clearTimeout(_tipTimer);
+  _tipTimer = setTimeout(dismissTip, 18000);
+};
+
+window.dismissTip = function() {
+  clearTimeout(_tipTimer);
+  document.getElementById('tipBanner').classList.remove('show');
+};
 
 // ── Init ───────────────────────────────────────────────────────
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-SE', {
