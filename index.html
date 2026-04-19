@@ -298,6 +298,25 @@ textarea { resize: vertical; min-height: 58px; }
 .calc-btn.zero { grid-column: span 2; text-align: left; padding-left: 1.1rem; }
 .calc-use { margin-top: 0.15rem; }
 
+/* ── Voice input ─────────────────────────────────────────────── */
+.mic-btn { display: flex; align-items: center; gap: 0.35rem; }
+.listening-modal { width: min(260px, 85vw) !important; text-align: center; }
+.mic-ring {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0.5rem auto 1.1rem;
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+.mic-ring.idle { animation: none; background: var(--border); color: var(--muted); }
+@keyframes micPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(200,75,47,0.35); }
+  50%      { box-shadow: 0 0 0 22px rgba(200,75,47,0); }
+}
+.listen-status { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.35rem; }
+.voice-live    { font-size: 0.82rem; color: var(--muted); font-style: italic; min-height: 38px; padding: 0.35rem 0 0.75rem; line-height: 1.5; }
+.voice-heard   { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.85rem; color: var(--muted); font-style: italic; margin-bottom: 1rem; min-height: 38px; }
+
 @media print {
   header, .loading-overlay, .modal-backdrop, .toast,
   .budget-bar-wrap, .chart-panel, .two-col,
@@ -341,6 +360,14 @@ textarea { resize: vertical; min-height: 58px; }
       <span id="syncLabel">Connecting…</span>
     </div>
     <div class="header-date" id="headerDate"></div>
+    <button class="icon-btn" onclick="startVoiceInput()" title="Add expense by voice">
+      <svg width="13" height="17" viewBox="0 0 13 17" fill="currentColor" style="display:block;">
+        <rect x="3.5" y="0" width="6" height="9.5" rx="3"/>
+        <path d="M1 9A5.5 5.5 0 0 0 12 9" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <line x1="6.5" y1="14.5" x2="6.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="3.5" y1="16.5" x2="9.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button class="icon-btn" onclick="openSettingsModal()" title="Settings">⚙</button>
   </div>
 </header>
@@ -391,7 +418,18 @@ textarea { resize: vertical; min-height: 58px; }
 
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">Add expense</div>
+      <div class="panel-title">
+        Add expense
+        <button class="panel-link mic-btn" onclick="startVoiceInput()" title="Add via voice">
+          <svg width="11" height="14" viewBox="0 0 13 17" fill="currentColor">
+            <rect x="3.5" y="0" width="6" height="9.5" rx="3"/>
+            <path d="M1 9A5.5 5.5 0 0 0 12 9" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+            <line x1="6.5" y1="14.5" x2="6.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="3.5" y1="16.5" x2="9.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Voice
+        </button>
+      </div>
       <div class="form-group">
         <label>Item name</label>
         <input type="text" id="expName" placeholder="e.g. Oat milk latte" />
@@ -577,6 +615,57 @@ textarea { resize: vertical; min-height: 58px; }
     </div>
     <hr class="modal-divider">
     <button class="btn btn-outline" onclick="closeSettingsModal()">Close</button>
+  </div>
+</div>
+
+<!-- Listening Modal -->
+<div class="modal-backdrop" id="listeningModal">
+  <div class="modal listening-modal">
+    <div class="mic-ring" id="micRing">
+      <svg width="28" height="34" viewBox="0 0 13 17" fill="currentColor">
+        <rect x="3.5" y="0" width="6" height="9.5" rx="3"/>
+        <path d="M1 9A5.5 5.5 0 0 0 12 9" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <line x1="6.5" y1="14.5" x2="6.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="3.5" y1="16.5" x2="9.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="listen-status" id="listenStatus">Listening…</div>
+    <div class="voice-live" id="voiceLive">Speak now — e.g. "tomatoes for 50 kroner"</div>
+    <button class="btn btn-outline" onclick="stopListening()" style="margin-top:0.25rem;">Stop</button>
+  </div>
+</div>
+
+<!-- Voice Suggestion Modal -->
+<div class="modal-backdrop" id="voiceModal">
+  <div class="modal">
+    <div class="modal-title">Voice suggestion</div>
+    <div class="voice-heard" id="voiceHeard"></div>
+    <div class="form-group">
+      <label>Item name</label>
+      <input type="text" id="voiceName" />
+    </div>
+    <div class="form-group">
+      <label>Amount</label>
+      <input type="number" id="voiceAmount" min="0" step="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="voiceCat"></select>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="voiceDate" />
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="voiceNotes" placeholder="Any additional details…"></textarea>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="voiceRecurring" />
+      <label for="voiceRecurring">Recurring expense</label>
+    </div>
+    <button class="btn btn-primary" onclick="confirmVoiceAdd()">Confirm &amp; Add</button>
+    <button class="btn btn-outline" onclick="closeVoiceModal()">Cancel</button>
   </div>
 </div>
 
@@ -877,8 +966,9 @@ function refresh() {
 // ── Category selects ───────────────────────────────────────────
 function populateCatSelects() {
   const opts = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-  document.getElementById('expCat').innerHTML  = opts;
-  document.getElementById('editCat').innerHTML = opts;
+  document.getElementById('expCat').innerHTML    = opts;
+  document.getElementById('editCat').innerHTML   = opts;
+  document.getElementById('voiceCat').innerHTML  = opts;
 
   const filterOpts = '<option value="">All categories</option>' +
     categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
@@ -1326,8 +1416,158 @@ function calcKeyHandler(e) {
   else if (e.key === 'Escape')                             { e.preventDefault(); closeCalcModal(); }
 }
 
+// ── Voice input ────────────────────────────────────────────────
+let recognition = null;
+
+window.startVoiceInput = function() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice input not supported. Try Chrome or Edge.'); return; }
+
+  recognition = new SR();
+  recognition.continuous      = false;
+  recognition.interimResults  = true;
+  recognition.lang            = 'en-US';
+
+  document.getElementById('listenStatus').textContent = 'Listening…';
+  document.getElementById('voiceLive').textContent    = 'Speak now — e.g. "coffee for 45 kroner"';
+  document.getElementById('micRing').classList.remove('idle');
+  document.getElementById('listeningModal').classList.add('open');
+
+  recognition.onresult = function(e) {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      e.results[i].isFinal ? (final += t) : (interim += t);
+    }
+    document.getElementById('voiceLive').textContent = final || interim || '…';
+  };
+
+  recognition.onend = function() {
+    const heard = document.getElementById('voiceLive').textContent.trim();
+    document.getElementById('listeningModal').classList.remove('open');
+    if (heard && heard !== 'Speak now — e.g. "coffee for 45 kroner"' && heard !== '…') {
+      showVoiceSuggestion(heard);
+    } else {
+      showToast('No speech detected — please try again.');
+    }
+  };
+
+  recognition.onerror = function(e) {
+    document.getElementById('micRing').classList.add('idle');
+    document.getElementById('listenStatus').textContent = 'Error';
+    setTimeout(() => document.getElementById('listeningModal').classList.remove('open'), 800);
+    if (e.error === 'not-allowed')     showToast('Microphone access denied.');
+    else if (e.error === 'no-speech')  showToast('No speech detected — please try again.');
+    else                               showToast('Voice error: ' + e.error);
+  };
+
+  try { recognition.start(); }
+  catch(e) { showToast('Could not start microphone.'); }
+};
+
+window.stopListening = function() {
+  if (recognition) { recognition.stop(); recognition = null; }
+};
+
+function showVoiceSuggestion(transcript) {
+  const parsed = parseVoiceInput(transcript);
+  document.getElementById('voiceHeard').textContent   = '"' + transcript + '"';
+  document.getElementById('voiceName').value          = parsed.name;
+  document.getElementById('voiceAmount').value        = parsed.amount > 0 ? parsed.amount : '';
+  document.getElementById('voiceDate').value          = today();
+  document.getElementById('voiceNotes').value         = '';
+  document.getElementById('voiceRecurring').checked   = false;
+  // Set category, fallback to first option
+  const catSel = document.getElementById('voiceCat');
+  catSel.value = parsed.category;
+  if (!catSel.value && catSel.options.length) catSel.value = catSel.options[0].value;
+  document.getElementById('voiceModal').classList.add('open');
+}
+
+window.closeVoiceModal = function() {
+  document.getElementById('voiceModal').classList.remove('open');
+};
+
+window.confirmVoiceAdd = async function() {
+  const name      = document.getElementById('voiceName').value.trim();
+  const amount    = parseFloat(document.getElementById('voiceAmount').value);
+  const category  = document.getElementById('voiceCat').value;
+  const date      = document.getElementById('voiceDate').value;
+  const notes     = document.getElementById('voiceNotes').value.trim();
+  const recurring = document.getElementById('voiceRecurring').checked;
+
+  if (!name)            { showToast('Please enter an item name.'); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid amount.'); return; }
+  if (!date)            { showToast('Please pick a date.'); return; }
+
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    await addDoc(collection(db, 'expenses'), { name, amount, category, date, notes, recurring, createdAt: Date.now() });
+    closeVoiceModal();
+    showToast('Expense added via voice!');
+  } catch(e) {
+    showToast('Error saving. Check connection.');
+    setSyncStatus('error', 'Save failed');
+  }
+};
+
+function parseVoiceInput(transcript) {
+  const lower = transcript.toLowerCase().trim();
+  const cur   = 'kr(?:one(?:r|s)?)?|kronor|kroner|sek|dollar|dollars|euro|euros|pound|pounds|usd|eur|gbp|chf';
+
+  // Try "X for N [currency]" or "X at N" or "X N [currency]"
+  const pForward = new RegExp(`^(.+?)\\s+(?:for|at|costing?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(?:${cur})?\\s*$`, 'i');
+  // Try "X N [currency]" — name then number
+  const pNameNum  = new RegExp(`^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(?:${cur})?\\s*$`, 'i');
+  // Try "N [currency] for X" or "N [currency] X" — number first
+  const pNumName  = new RegExp(`^(\\d+(?:[.,]\\d+)?)\\s*(?:${cur})?\\s+(?:for\\s+)?(.+)$`, 'i');
+
+  let name = '', amount = 0;
+  let m;
+
+  if ((m = lower.match(pForward))) {
+    name   = m[1]; amount = parseFloat(m[2].replace(',', '.'));
+  } else if ((m = lower.match(pNameNum))) {
+    name   = m[1]; amount = parseFloat(m[2].replace(',', '.'));
+  } else if ((m = lower.match(pNumName))) {
+    amount = parseFloat(m[1].replace(',', '.')); name = m[2];
+  } else {
+    const num = lower.match(/\d+(?:[.,]\d+)?/);
+    if (num) { amount = parseFloat(num[0].replace(',', '.')); name = lower.replace(num[0], ''); }
+    else     { name = lower; }
+  }
+
+  // Clean up name: strip filler words, trim, capitalise
+  name = name
+    .replace(/\b(for|at|costing?|worth|costs?|of|is|was|about|spent?|paid?|bought?|and|the|a|an)\b/gi, '')
+    .replace(/\s+/g, ' ').trim();
+  name = name.charAt(0).toUpperCase() + name.slice(1);
+
+  return { name: name || 'Expense', amount, category: guessCategory(lower) };
+}
+
+function guessCategory(text) {
+  const map = [
+    { cat: 'Groceries',       words: ['grocer','supermarket','tomato','bread','milk','egg','fruit','vegetable','meat','cheese','butter','produce','pasta','rice','potato','carrot','onion','apple','banana','orange','berr','fish','chicken','beef','pork','coop','ica','lidl','willys'] },
+    { cat: 'Food & Drink',    words: ['coffee','latte','cappuccino','espresso','restaurant','cafe','lunch','dinner','breakfast','pizza','burger','sushi','beer','wine','drink','smoothie','tea','snack','kebab','takeaway','takeout','fika','sandwich','soup','noodle','thai','indian','chinese','bakery'] },
+    { cat: 'Transport',       words: ['bus','train','taxi','uber','metro','subway','fuel','petrol','parking','toll','ferry','flight','tram','commute','ticket','travel','car','bike','lyft','bolt'] },
+    { cat: 'Shopping',        words: ['shirt','shoe','cloth','jean','jacket','dress','amazon','ikea','fashion','bag','watch','electronic','phone','laptop','headphone','book','toy','gift','present','h&m','zara','apparel'] },
+    { cat: 'Health',          words: ['gym','pharmacy','medicine','doctor','dentist','hospital','fitness','vitamin','supplement','workout','yoga','medical','prescription','apoteket','clinic'] },
+    { cat: 'Entertainment',   words: ['netflix','spotify','cinema','movie','game','concert','theater','museum','streaming','disney','hbo','hulu','subscription','event','show','ticket'] },
+    { cat: 'Bills & Utilities', words: ['electricity','water','internet','rent','insurance','utility','bill','heating','broadband','mobile','invoice','vattenfall','telia','phone bill'] },
+  ];
+
+  for (const { cat, words } of map) {
+    if (words.some(w => text.includes(w))) {
+      if (categories.find(c => c.name === cat)) return cat;
+    }
+  }
+  const fallback = categories.find(c => c.name === 'Other') || categories[0];
+  return fallback ? fallback.name : '';
+}
+
 // ── Close modals on backdrop click ─────────────────────────────
-['budgetModal','editModal','catsModal','settingsModal','calcModal'].forEach(id => {
+['budgetModal','editModal','catsModal','settingsModal','listeningModal','voiceModal','calcModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) {
       this.classList.remove('open');
