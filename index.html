@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spendlog — Expense Tracker</title>
+<title>Expensio — Expense Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -401,7 +401,7 @@
 <body>
 
 <header>
-  <div class="logo">Spend<span>log</span></div>
+  <div class="logo">Expens<span>io</span></div>
   <div class="header-date" id="headerDate"></div>
 </header>
 
@@ -531,12 +531,12 @@ const CAT_COLORS = {
   'Other': '#8a877e'
 };
 
-let expenses = JSON.parse(localStorage.getItem('spendlog_expenses') || '[]');
-let budget = parseFloat(localStorage.getItem('spendlog_budget') || '0');
+let expenses = JSON.parse(localStorage.getItem('expensio_expenses') || '[]');
+let budget = parseFloat(localStorage.getItem('expensio_budget') || '0');
 let currentFilter = 'day';
 
 function save() {
-  localStorage.setItem('spendlog_expenses', JSON.stringify(expenses));
+  localStorage.setItem('expensio_expenses', JSON.stringify(expenses));
 }
 
 function fmt(n) {
@@ -698,7 +698,7 @@ function saveBudget() {
   const val = parseFloat(document.getElementById('budgetInput').value);
   if (!val || val <= 0) { showToast('Enter a valid budget.'); return; }
   budget = val;
-  localStorage.setItem('spendlog_budget', budget);
+  localStorage.setItem('expensio_budget', budget);
   closeBudgetModal();
   showToast('Budget updated!');
   refresh();
