@@ -240,8 +240,15 @@ textarea { resize: vertical; min-height: 58px; }
 .cat-manage-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; max-height: 220px; overflow-y: auto; }
 .cat-manage-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--paper); border-radius: 8px; border: 1px solid var(--border); }
 .cat-manage-name { flex: 1; font-size: 0.88rem; }
-.cat-manage-del { background: none; border: none; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; font-size: 0.9rem; padding: 2px 5px; }
-.cat-manage-del:hover { opacity: 1; color: var(--accent); }
+.cat-manage-del  { background: none; border: none; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; font-size: 0.9rem; padding: 2px 5px; }
+.cat-manage-del:hover  { opacity: 1; color: var(--accent); }
+.cat-manage-edit { background: none; border: none; cursor: pointer; color: var(--muted); opacity: 0.5; transition: opacity 0.15s; font-size: 0.95rem; padding: 2px 5px; }
+.cat-manage-edit:hover { opacity: 1; color: var(--accent); }
+.cat-manage-row.editing { background: var(--accent-soft); border-color: var(--accent); }
+.cat-manage-row input[type="color"] { width: 32px; height: 28px; padding: 1px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); background: var(--paper); flex-shrink: 0; }
+.cat-manage-row input[type="text"]  { flex: 1; padding: 0.3rem 0.6rem; font-size: 0.85rem; min-width: 0; }
+.cat-save-btn { background: var(--green); border: none; border-radius: 6px; color: #fff; cursor: pointer; font-size: 0.9rem; padding: 3px 9px; font-weight: 600; flex-shrink: 0; transition: opacity 0.15s; }
+.cat-save-btn:hover { opacity: 0.85; }
 .cat-add-row { display: flex; gap: 0.5rem; align-items: center; }
 .cat-add-row input[type="text"] { flex: 1; padding: 0.5rem 0.75rem; font-size: 0.88rem; }
 .cat-add-row input[type="color"] { width: 40px; height: 36px; padding: 2px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--paper); flex-shrink: 0; }
@@ -1035,19 +1042,78 @@ window.saveBudget = async function() {
 };
 
 // ── Categories modal ───────────────────────────────────────────
-window.openCatsModal  = () => { renderCatManageList(); document.getElementById('catsModal').classList.add('open'); };
-window.closeCatsModal = () => document.getElementById('catsModal').classList.remove('open');
+let editingCatIndex = null;
+
+window.openCatsModal = () => {
+  editingCatIndex = null;
+  renderCatManageList();
+  document.getElementById('catsModal').classList.add('open');
+};
+window.closeCatsModal = () => {
+  editingCatIndex = null;
+  document.getElementById('catsModal').classList.remove('open');
+};
 
 function renderCatManageList() {
   const el = document.getElementById('catManageList');
   if (!categories.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">No categories.</div>'; return; }
-  el.innerHTML = categories.map((c, i) => `
-    <div class="cat-manage-row">
+  el.innerHTML = categories.map((c, i) => {
+    if (i === editingCatIndex) {
+      return `<div class="cat-manage-row editing">
+        <input type="color" id="editCatColor_${i}" value="${c.color}" />
+        <input type="text"  id="editCatName_${i}"  value="${c.name}" onkeydown="if(event.key==='Enter')saveEditCat(${i});else if(event.key==='Escape')cancelEditCat();" />
+        <button class="cat-save-btn" onclick="saveEditCat(${i})" title="Save">✓</button>
+        <button class="cat-manage-del" onclick="cancelEditCat()" title="Cancel">✕</button>
+      </div>`;
+    }
+    return `<div class="cat-manage-row">
       <div style="width:14px;height:14px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
       <div class="cat-manage-name">${c.name}</div>
-      <button class="cat-manage-del" onclick="removeCategory(${i})" title="Remove">✕</button>
-    </div>`).join('');
+      <button class="cat-manage-edit" onclick="startEditCat(${i})" title="Edit">✎</button>
+      <button class="cat-manage-del"  onclick="removeCategory(${i})" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+
+  if (editingCatIndex !== null) {
+    const inp = document.getElementById(`editCatName_${editingCatIndex}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }
 }
+
+window.startEditCat = function(i) {
+  editingCatIndex = i;
+  renderCatManageList();
+};
+
+window.cancelEditCat = function() {
+  editingCatIndex = null;
+  renderCatManageList();
+};
+
+window.saveEditCat = async function(i) {
+  const newName  = document.getElementById(`editCatName_${i}`).value.trim();
+  const newColor = document.getElementById(`editCatColor_${i}`).value;
+  if (!newName) { showToast('Name cannot be empty.'); return; }
+  if (categories.find((c, idx) => idx !== i && c.name.toLowerCase() === newName.toLowerCase())) {
+    showToast('Category name already exists.'); return;
+  }
+  const oldName = categories[i].name;
+  categories[i] = { name: newName, color: newColor };
+
+  if (oldName !== newName) {
+    const toUpdate = expenses.filter(e => e.category === oldName);
+    if (toUpdate.length) {
+      await Promise.all(toUpdate.map(e => updateDoc(doc(db, 'expenses', e.id), { category: newName })));
+    }
+  }
+
+  await saveCategories();
+  editingCatIndex = null;
+  renderCatManageList();
+  populateCatSelects();
+  refresh();
+  showToast('Category updated!');
+};
 
 window.addCategory = async function() {
   const name  = document.getElementById('newCatName').value.trim();
