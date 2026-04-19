@@ -206,6 +206,16 @@ textarea { resize: vertical; min-height: 58px; }
 .filter-bar select { width: auto; min-width: 150px; padding: 0.5rem 0.85rem; font-size: 0.88rem; }
 .recurring-chip { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted); cursor: pointer; white-space: nowrap; user-select: none; }
 .recurring-chip input { width: auto; margin: 0; cursor: pointer; accent-color: var(--accent); }
+.filter-date { padding: 0.5rem 0.85rem; font-size: 0.88rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; }
+.filter-date:focus { border-color: var(--accent); }
+.filter-date.active { border-color: var(--accent); background: var(--accent-soft); }
+.day-filter-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.day-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.day-pill { padding: 0.3rem 0.72rem; border: 1px solid var(--border); border-radius: 99px; font-size: 0.78rem; font-weight: 500; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all 0.15s; white-space: nowrap; }
+.day-pill:hover { border-color: var(--accent); color: var(--accent); }
+.day-pill.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.clear-link { font-size: 0.78rem; color: var(--accent); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; white-space: nowrap; padding: 0; margin-left: auto; }
+.clear-link:hover { text-decoration: underline; }
 
 .expense-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .expense-item {
@@ -587,10 +597,23 @@ textarea { resize: vertical; min-height: 58px; }
     <select id="catFilterSelect" onchange="setCatFilter(this.value)">
       <option value="">All categories</option>
     </select>
+    <input type="date" id="dateFilterInput" class="filter-date" onchange="setFilterDate(this.value)" title="Filter by specific date" />
     <label class="recurring-chip">
       <input type="checkbox" id="recurringToggle" onchange="setRecurringFilter(this.checked)" />
       Recurring only
     </label>
+  </div>
+  <div class="day-filter-row">
+    <div class="day-pills">
+      <button class="day-pill" id="day-1" onclick="toggleDay(1)">Mon</button>
+      <button class="day-pill" id="day-2" onclick="toggleDay(2)">Tue</button>
+      <button class="day-pill" id="day-3" onclick="toggleDay(3)">Wed</button>
+      <button class="day-pill" id="day-4" onclick="toggleDay(4)">Thu</button>
+      <button class="day-pill" id="day-5" onclick="toggleDay(5)">Fri</button>
+      <button class="day-pill" id="day-6" onclick="toggleDay(6)">Sat</button>
+      <button class="day-pill" id="day-0" onclick="toggleDay(0)">Sun</button>
+    </div>
+    <button class="clear-link" id="clearDateFiltersBtn" onclick="clearDateFilters()" style="display:none;">✕ Clear</button>
   </div>
 
   <div class="expense-list" id="expenseList"></div>
@@ -878,6 +901,8 @@ let searchQuery     = '';
 let catFilter       = '';
 let showRecurring   = false;
 let editingId       = null;
+let filterDate      = '';
+let filterDays      = [];
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -1074,6 +1099,13 @@ function renderList() {
   }
   if (catFilter)     filtExp = filtExp.filter(e => e.category === catFilter);
   if (showRecurring) filtExp = filtExp.filter(e => e.recurring);
+  if (filterDate) {
+    filtExp = filtExp.filter(e => e.date === filterDate);
+    filtInc = filtInc.filter(e => e.date === filterDate);
+  } else if (filterDays.length > 0) {
+    filtExp = filtExp.filter(e => filterDays.includes(new Date(e.date + 'T12:00:00').getDay()));
+    filtInc = filtInc.filter(e => filterDays.includes(new Date(e.date + 'T12:00:00').getDay()));
+  }
 
   const expRows = filtExp.map(e => ({ ...e, _t: 'exp' }));
   const incRows = filtInc.map(e => ({ ...e, _t: 'inc' }));
@@ -1288,6 +1320,33 @@ window.setFilter = function(f, el) {
 window.setSearch         = val => { searchQuery   = val;  renderList(); };
 window.setCatFilter      = val => { catFilter     = val;  renderList(); };
 window.setRecurringFilter = val => { showRecurring = val; renderList(); };
+
+function updateClearBtn() {
+  document.getElementById('clearDateFiltersBtn').style.display =
+    (filterDate || filterDays.length > 0) ? '' : 'none';
+}
+window.setFilterDate = function(val) {
+  filterDate = val;
+  document.getElementById('dateFilterInput').classList.toggle('active', !!val);
+  updateClearBtn();
+  renderList();
+};
+window.toggleDay = function(d) {
+  const idx = filterDays.indexOf(d);
+  if (idx === -1) filterDays.push(d); else filterDays.splice(idx, 1);
+  document.getElementById('day-' + d).classList.toggle('active', filterDays.includes(d));
+  updateClearBtn();
+  renderList();
+};
+window.clearDateFilters = function() {
+  filterDate = '';
+  filterDays = [];
+  document.getElementById('dateFilterInput').value = '';
+  document.getElementById('dateFilterInput').classList.remove('active');
+  [0,1,2,3,4,5,6].forEach(d => document.getElementById('day-' + d).classList.remove('active'));
+  updateClearBtn();
+  renderList();
+};
 
 // ── Budget modal ───────────────────────────────────────────────
 window.openBudgetModal  = () => { document.getElementById('budgetInput').value = budget || ''; document.getElementById('budgetModal').classList.add('open'); };
