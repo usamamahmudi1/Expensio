@@ -595,6 +595,13 @@ textarea { resize: vertical; min-height: 58px; }
       Recurring only
     </label>
   </div>
+  <div class="day-filter-row" style="margin-bottom:0.6rem;">
+    <div class="day-pills">
+      <button class="day-pill active" id="typeAll" onclick="setTypeFilter('all')">All</button>
+      <button class="day-pill" id="typeExp" onclick="setTypeFilter('exp')">Expenses</button>
+      <button class="day-pill" id="typeInc" onclick="setTypeFilter('inc')">Income</button>
+    </div>
+  </div>
   <div class="day-filter-row">
     <div class="day-pills">
       <button class="day-pill" id="day-1" onclick="toggleDay(1)">Mon</button>
@@ -914,6 +921,7 @@ let showRecurring   = false;
 let editingId       = null;
 let filterDate      = '';
 let filterDays      = [];
+let typeFilter      = 'all';
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -1118,8 +1126,8 @@ function renderList() {
     filtInc = filtInc.filter(e => filterDays.includes(new Date(e.date + 'T12:00:00').getDay()));
   }
 
-  const expRows = filtExp.map(e => ({ ...e, _t: 'exp' }));
-  const incRows = filtInc.map(e => ({ ...e, _t: 'inc' }));
+  const expRows = typeFilter === 'inc' ? [] : filtExp.map(e => ({ ...e, _t: 'exp' }));
+  const incRows = typeFilter === 'exp' ? [] : filtInc.map(e => ({ ...e, _t: 'inc' }));
   const all     = [...expRows, ...incRows].sort((a, b) => {
     const diff = new Date(b.date) - new Date(a.date);
     return diff !== 0 ? diff : (a._t === 'inc' ? -1 : 1);
@@ -1339,6 +1347,11 @@ window.setFilter = function(f, el) {
 window.setSearch         = val => { searchQuery   = val;  renderList(); };
 window.setCatFilter      = val => { catFilter     = val;  renderList(); };
 window.setRecurringFilter = val => { showRecurring = val; renderList(); };
+window.setTypeFilter = function(t) {
+  typeFilter = t;
+  ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === t));
+  renderList();
+};
 
 function updateClearBtn() {
   document.getElementById('clearDateFiltersBtn').style.display =
