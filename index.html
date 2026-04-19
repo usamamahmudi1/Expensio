@@ -613,6 +613,7 @@ textarea { resize: vertical; min-height: 58px; }
       <input type="checkbox" id="recurringToggle" onchange="setRecurringFilter(this.checked)" />
       Recurring only
     </label>
+    <button class="clear-link" id="clearAllFiltersBtn" onclick="clearAllFilters()" style="display:none;">✕ Clear all</button>
   </div>
   <div class="day-filter-row" style="margin-bottom:0.6rem;">
     <div class="day-pills">
@@ -1363,30 +1364,34 @@ window.setFilter = function(f, el) {
   el.classList.add('active');
   renderList();
 };
-window.setSearch         = val => { searchQuery   = val;  renderList(); };
-window.setCatFilter      = val => { catFilter     = val;  renderList(); };
-window.setRecurringFilter = val => { showRecurring = val; renderList(); };
-window.setTypeFilter = function(t) {
-  typeFilter = t;
-  ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === t));
-  renderList();
-};
-
-function updateClearBtn() {
+function hasActiveFilters() {
+  return searchQuery || catFilter || showRecurring || filterDate || filterDays.length > 0 || typeFilter !== 'all';
+}
+function updateClearAllBtn() {
+  document.getElementById('clearAllFiltersBtn').style.display = hasActiveFilters() ? '' : 'none';
   document.getElementById('clearDateFiltersBtn').style.display =
     (filterDate || filterDays.length > 0) ? '' : 'none';
 }
+window.setSearch = val => { searchQuery = val; updateClearAllBtn(); renderList(); };
+window.setCatFilter = val => { catFilter = val; updateClearAllBtn(); renderList(); };
+window.setRecurringFilter = val => { showRecurring = val; updateClearAllBtn(); renderList(); };
+window.setTypeFilter = function(t) {
+  typeFilter = t;
+  ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === t));
+  updateClearAllBtn();
+  renderList();
+};
 window.setFilterDate = function(val) {
   filterDate = val;
   document.getElementById('dateFilterInput').classList.toggle('active', !!val);
-  updateClearBtn();
+  updateClearAllBtn();
   renderList();
 };
 window.toggleDay = function(d) {
   const idx = filterDays.indexOf(d);
   if (idx === -1) filterDays.push(d); else filterDays.splice(idx, 1);
   document.getElementById('day-' + d).classList.toggle('active', filterDays.includes(d));
-  updateClearBtn();
+  updateClearAllBtn();
   renderList();
 };
 window.clearDateFilters = function() {
@@ -1395,7 +1400,20 @@ window.clearDateFilters = function() {
   document.getElementById('dateFilterInput').value = '';
   document.getElementById('dateFilterInput').classList.remove('active');
   [0,1,2,3,4,5,6].forEach(d => document.getElementById('day-' + d).classList.remove('active'));
-  updateClearBtn();
+  updateClearAllBtn();
+  renderList();
+};
+window.clearAllFilters = function() {
+  searchQuery  = '';  catFilter = '';  showRecurring = false;
+  filterDate   = '';  filterDays = []; typeFilter    = 'all';
+  document.getElementById('searchInput').value        = '';
+  document.getElementById('catFilterSelect').value    = '';
+  document.getElementById('recurringToggle').checked  = false;
+  document.getElementById('dateFilterInput').value    = '';
+  document.getElementById('dateFilterInput').classList.remove('active');
+  [0,1,2,3,4,5,6].forEach(d => document.getElementById('day-' + d).classList.remove('active'));
+  ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === 'all'));
+  updateClearAllBtn();
   renderList();
 };
 
