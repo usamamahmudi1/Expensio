@@ -286,18 +286,36 @@ textarea { resize: vertical; min-height: 58px; }
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--ink); color: var(--paper); padding: 0.7rem 1.5rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500; z-index: 300; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ── Tip banner ─────────────────────────────────────────────── */
-.tip-banner { position: fixed; bottom: 1.75rem; left: 50%; transform: translateX(-50%) translateY(calc(100% + 3rem)); transition: transform 0.4s cubic-bezier(0.34,1.36,0.64,1); z-index: 150; width: min(500px, calc(100vw - 2rem)); background: var(--ink); color: var(--paper); border-radius: 16px; padding: 1.2rem 1.4rem 1rem; box-shadow: 0 8px 40px rgba(0,0,0,0.22); pointer-events: auto; }
-.tip-banner.show { transform: translateX(-50%) translateY(0); }
-.tip-header { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.55rem; }
-.tip-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.55; }
-.tip-counter { font-size: 0.7rem; opacity: 0.4; margin-left: auto; }
-.tip-text { font-size: 0.88rem; line-height: 1.55; opacity: 0.93; margin-bottom: 0.9rem; }
+/* ── Tip card (centered) ────────────────────────────────────── */
+.tip-scrim { position: fixed; inset: 0; z-index: 150; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: rgba(26,26,24,0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.tip-scrim.show { opacity: 1; pointer-events: auto; }
+[data-theme="dark"] .tip-scrim { background: rgba(0,0,0,0.5); }
+.tip-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 2rem 2rem 1.5rem; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); transform: scale(0.9) translateY(16px); opacity: 0; transition: transform 0.35s cubic-bezier(0.34,1.3,0.64,1), opacity 0.3s; }
+.tip-scrim.show .tip-card { transform: scale(1) translateY(0); opacity: 1; }
+.tip-header { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.75rem; }
+.tip-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.tip-counter { font-size: 0.7rem; color: var(--muted); margin-left: auto; }
+.tip-icon-big { font-size: 2.2rem; margin-bottom: 0.6rem; display: block; }
+.tip-title-text { font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: var(--ink); margin-bottom: 0.5rem; }
+.tip-text { font-size: 0.9rem; line-height: 1.6; color: var(--ink); opacity: 0.82; margin-bottom: 1.25rem; }
 .tip-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
-.tip-btn { background: rgba(255,255,255,0.12); border: none; color: var(--paper); padding: 0.38rem 0.9rem; border-radius: 99px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; white-space: nowrap; }
-.tip-btn:hover { background: rgba(255,255,255,0.22); }
-.tip-btn.accent { background: var(--accent); }
-.tip-btn.accent:hover { opacity: 0.88; }
+.tip-btn { background: var(--paper); border: 1px solid var(--border); color: var(--ink); padding: 0.42rem 1rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; white-space: nowrap; }
+.tip-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tip-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.tip-btn.primary:hover { opacity: 0.85; }
+
+/* ── Guide modal ────────────────────────────────────────────── */
+.guide-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+.guide-tab { flex: 1; padding: 0.6rem 0.5rem; font-size: 0.84rem; font-weight: 600; text-align: center; cursor: pointer; background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.guide-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+.guide-card { background: var(--accent-soft); border: 1px solid var(--border); border-radius: 14px; padding: 1.75rem 1.5rem 1.5rem; min-height: 160px; display: flex; flex-direction: column; }
+.guide-card-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+.guide-card-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--ink); margin-bottom: 0.5rem; }
+.guide-card-text { font-size: 0.88rem; line-height: 1.6; color: var(--ink); opacity: 0.82; flex: 1; }
+.guide-nav { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.25rem; }
+.guide-dots { display: flex; gap: 0.35rem; flex: 1; justify-content: center; }
+.guide-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: background 0.15s, transform 0.15s; }
+.guide-dot.active { background: var(--accent); transform: scale(1.3); }
 
 /* ── Login overlay ──────────────────────────────────────────── */
 .login-overlay { position: fixed; inset: 0; background: var(--paper); z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
@@ -495,6 +513,7 @@ textarea { resize: vertical; min-height: 58px; }
     </button>
     <span class="user-chip" id="userChip" style="display:none;"></span>
     <button class="icon-btn" id="logoutBtn" onclick="doLogout()" title="Sign out" style="display:none;">⏻</button>
+    <button class="icon-btn" onclick="openGuideModal()" title="Guide &amp; Tips" style="font-size:1rem;font-weight:700;">?</button>
     <button class="icon-btn" onclick="openSettingsModal()" title="Settings">⚙</button>
   </div>
 </header>
@@ -1020,17 +1039,44 @@ textarea { resize: vertical; min-height: 58px; }
 
 <div class="toast" id="toast"></div>
 
-<!-- Tip Banner -->
-<div class="tip-banner" id="tipBanner">
-  <div class="tip-header">
-    <span>💡</span>
-    <span class="tip-label">Tip</span>
-    <span class="tip-counter" id="tipCounter"></span>
+<!-- Tip Card (centered, auto-show) -->
+<div class="tip-scrim" id="tipScrim" onclick="if(event.target===this)dismissTip()">
+  <div class="tip-card">
+    <div class="tip-header">
+      <span class="tip-label">💡 Tip of the session</span>
+      <span class="tip-counter" id="tipCounter"></span>
+    </div>
+    <span class="tip-icon-big" id="tipIcon"></span>
+    <div class="tip-text" id="tipText"></div>
+    <div class="tip-actions">
+      <button class="tip-btn" onclick="openGuideModal()">See all tips</button>
+      <button class="tip-btn" onclick="nextTip()">Next →</button>
+      <button class="tip-btn primary" onclick="dismissTip()">Got it</button>
+    </div>
   </div>
-  <div class="tip-text" id="tipText"></div>
-  <div class="tip-actions">
-    <button class="tip-btn" onclick="dismissTip()">Got it</button>
-    <button class="tip-btn accent" onclick="nextTip()">Next tip →</button>
+</div>
+
+<!-- Guide Modal -->
+<div class="modal-backdrop" id="guideModal">
+  <div class="modal" style="max-width:520px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+      <div class="modal-title" style="margin:0;">Expensio Guide</div>
+      <button class="icon-btn" onclick="closeGuideModal()" style="font-size:1.1rem;">✕</button>
+    </div>
+    <div class="guide-tabs">
+      <button class="guide-tab active" id="guideTabGs" onclick="switchGuideTab('gs')">🚀 Getting Started</button>
+      <button class="guide-tab" id="guideTabAll" onclick="switchGuideTab('all')">📚 All Tips</button>
+    </div>
+    <div class="guide-card">
+      <div class="guide-card-icon" id="guideCardIcon"></div>
+      <div class="guide-card-title" id="guideCardTitle"></div>
+      <div class="guide-card-text" id="guideCardText"></div>
+    </div>
+    <div class="guide-nav">
+      <button class="tip-btn" id="guidePrevBtn" onclick="guideNav(-1)">← Prev</button>
+      <div class="guide-dots" id="guideDots"></div>
+      <button class="tip-btn primary" id="guideNextBtn" onclick="guideNav(1)">Next →</button>
+    </div>
   </div>
 </div>
 
@@ -2588,7 +2634,7 @@ function guessCategory(text) {
 }
 
 // ── Close modals on backdrop click ─────────────────────────────
-['budgetModal','editModal','incomeEditModal','catsModal','settingsModal','listeningModal','calcModal'].forEach(id => {
+['budgetModal','editModal','incomeEditModal','catsModal','settingsModal','listeningModal','calcModal','guideModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) {
       this.classList.remove('open');
@@ -2597,65 +2643,140 @@ function guessCategory(text) {
   });
 });
 
-// ── Tips system ────────────────────────────────────────────────
-const TIPS = [
-  { icon: '🎤', text: 'Voice entry: tap the mic icon and say something like "coffee for 45 kroner" — the app auto-fills the name, amount, category and today\'s date for you to confirm.' },
-  { icon: '➕', text: 'New category on the fly: when adding an expense, tap + New next to the category dropdown to create a brand-new category without leaving the form.' },
-  { icon: '🧮', text: 'Built-in calculator: tap the calculator icon in the header (or the small calc button next to any amount field) to do quick maths before entering a value.' },
-  { icon: '📅', text: 'Custom date range: in History, tap the Custom tab and pick any From → To dates. All summary cards, charts and category breakdowns update to match that period.' },
-  { icon: '📆', text: 'Day-of-week filter: tap the Mon–Sun pills in History to see only entries from specific weekdays — handy for spotting weekend or commute spending patterns.' },
-  { icon: '💰', text: 'Track income: switch to the Record Income tab in the add form to log salary, repayments, gifts or bonuses. Net balance updates automatically each month.' },
-  { icon: '🌙', text: 'Dark mode: tap the ☀/🌙 icon in the top-right to toggle themes. Your preference is remembered across sessions.' },
-  { icon: '📤', text: 'Export: scroll to History and use ↓ CSV to download a spreadsheet, or ⎙ Print/PDF to save or print a formatted record of your expenses.' },
-  { icon: '💳', text: 'Monthly budget: tap Edit next to the budget bar to set a spending limit. The bar turns orange at 75 % and red when you go over — a clear visual warning.' },
-  { icon: '🔁', text: 'Recurring expenses: check the Recurring box when adding a subscription or regular bill, then use the Recurring only filter in History to review them all at once.' },
-  { icon: '🎨', text: 'Edit categories: tap Manage next to the category breakdown to rename, recolor or delete any expense or income category. Renames apply to all existing entries automatically.' },
-  { icon: '📅', text: 'Custom month cycle: in Settings, set your cycle start day (e.g. 25) so the "month" period runs 25th–24th instead of 1st–31st — great for salary cycles.' },
-  { icon: '🏠', text: 'Default view: choose your preferred opening period (Today / Week / Month / Year / All) in Settings. The app always starts on the view most useful to you.' },
-  { icon: '🔍', text: 'History search: the search bar scans expense names, income descriptions, notes and categories simultaneously — just type a keyword to filter instantly.' },
-  { icon: '📝', text: 'Expense notes: expand the Notes field when adding an expense to jot down extra detail (e.g. "team lunch, receipt #42"). Notes are searchable in History.' },
-  { icon: '⚖️', text: 'Filter by type: use the All / Expenses / Income pills above the History list to show only one kind of entry — useful when reviewing just your income or just your spending.' },
-  { icon: '🗓', text: 'Exact-date filter: pick a specific date from the date picker in the History filter bar to see only entries from that one day.' },
-  { icon: '✕', text: 'Clear all filters: if History looks unexpectedly empty, tap ✕ Clear all (appears in the filter bar whenever any filter is active) to reset everything at once.' },
-  { icon: '📊', text: 'Spending chart: the bar chart shows monthly totals for the last 6 months — or, when Custom date range is active, for every month within your chosen range.' },
-  { icon: '🔒', text: 'Multi-user login: go to Settings → enable Require Login → add a username and password. Each household member gets their own account on the shared budget.' },
-  { icon: '👥', text: 'Adding users: once login is enabled, open Settings at any time to add more users. Existing users are never signed out when you add someone new.' },
-  { icon: '🏷️', text: 'Income categories: tap Manage next to the category breakdown, then switch to the Income tab to add, rename or recolor income categories (Salary, Freelance, etc.).' },
-  { icon: '💡', text: 'Net balance: the Net Balance card on the summary grid shows income minus expenses for the current period — green means surplus, red means deficit.' },
-  { icon: '📱', text: 'Add to home screen: on mobile, use your browser\'s "Add to Home Screen" option to install Expensio as an app icon for quick one-tap access.' },
+// ── Tips & Guide system ─────────────────────────────────────────
+
+const GETTING_STARTED = [
+  { icon: '👋', title: 'Welcome to Expensio', text: 'Expensio helps you track expenses and income, set budgets, and understand your spending — all synced to the cloud in real time. Use the ? button in the header anytime to revisit this guide.' },
+  { icon: '➕', title: 'Adding an expense', text: 'Fill in the name, amount and category in the form, then tap Add Expense. The date defaults to today. Check Recurring for subscriptions or regular bills.' },
+  { icon: '💰', title: 'Recording income', text: 'Tap the Record Income tab in the form to log salary, repayments, bonuses or any money received. The Net Balance card at the top updates automatically.' },
+  { icon: '💳', title: 'Setting a budget', text: 'Tap Edit next to the spending bar at the top to set a monthly limit. The bar turns orange at 75% and red when over budget — a clear at-a-glance warning.' },
+  { icon: '📋', title: 'Browsing history', text: 'Scroll down to History to see all entries. Use the period tabs (Today / Week / Month / Year / All) and the search bar to find any expense quickly.' },
+  { icon: '🎨', title: 'Managing categories', text: 'Tap Manage (next to the category chart) to rename, recolor or delete categories. You can also create a new one directly from the expense form with the + New button.' },
+  { icon: '⚙️', title: 'Settings', text: 'Tap the ⚙ icon in the header to change currency, set your month cycle start day (e.g. the 25th), choose a default view, and manage user logins.' },
+  { icon: '🎤', title: 'Voice shortcut', text: 'Tap the mic icon and say an expense out loud — "groceries for 200 kroner" — and the app pre-fills the name, amount, category and date for you to confirm or edit.' },
 ];
 
-let _tipIndex  = 0;
-let _tipTimer  = null;
+const ALL_TIPS = [
+  { icon: '🎤', title: 'Voice entry', text: 'Tap the mic icon and say something like "coffee for 45 kroner" — the app auto-fills the name, amount, category and today\'s date for you to confirm.' },
+  { icon: '➕', title: 'New category on the fly', text: 'When adding an expense, tap + New next to the category dropdown to create a brand-new category without leaving the form.' },
+  { icon: '🧮', title: 'Built-in calculator', text: 'Tap the calculator icon in the header (or the small calc button next to any amount field) to do quick maths before entering a value.' },
+  { icon: '📅', title: 'Custom date range', text: 'In History, tap the Custom tab and pick any From → To dates. All summary cards, charts and category breakdowns update to match that period.' },
+  { icon: '📆', title: 'Day-of-week filter', text: 'Tap the Mon–Sun pills in History to see only entries from specific weekdays — handy for spotting weekend or commute spending patterns.' },
+  { icon: '💰', title: 'Income tracking', text: 'Switch to the Record Income tab in the add form to log salary, repayments, gifts or bonuses. Net balance updates automatically each month.' },
+  { icon: '🌙', title: 'Dark mode', text: 'Tap the ☀/🌙 icon in the header to toggle themes. Your preference is saved automatically and remembered across sessions.' },
+  { icon: '📤', title: 'Export data', text: 'Scroll to History and use ↓ CSV to download a spreadsheet, or ⎙ Print/PDF to save or print a formatted record of your expenses.' },
+  { icon: '💳', title: 'Monthly budget', text: 'Tap Edit next to the budget bar to set a spending limit. The bar turns orange at 75% and red when you go over — a clear visual warning.' },
+  { icon: '🔁', title: 'Recurring expenses', text: 'Check the Recurring box when adding a subscription or regular bill, then use the Recurring only filter in History to review them all at once.' },
+  { icon: '🎨', title: 'Edit categories', text: 'Tap Manage next to the category breakdown to rename, recolor or delete any expense or income category. Renames apply to all existing entries automatically.' },
+  { icon: '📅', title: 'Custom month cycle', text: 'In Settings, set your cycle start day (e.g. 25) so the "month" period runs 25th–24th instead of 1st–31st — great for salary cycles.' },
+  { icon: '🏠', title: 'Default view', text: 'Choose your preferred opening period (Today / Week / Month / Year / All) in Settings. The app always starts on the view most useful to you.' },
+  { icon: '🔍', title: 'History search', text: 'The search bar scans expense names, income descriptions, notes and categories simultaneously — just type a keyword to filter instantly.' },
+  { icon: '📝', title: 'Expense notes', text: 'Expand the Notes field when adding an expense to jot down extra detail (e.g. "team lunch, receipt #42"). Notes are searchable in History.' },
+  { icon: '⚖️', title: 'Filter by type', text: 'Use the All / Expenses / Income pills above the History list to show only one kind of entry — useful when reviewing just income or just spending.' },
+  { icon: '🗓', title: 'Exact-date filter', text: 'Pick a specific date from the date picker in the History filter bar to see only entries from that one day.' },
+  { icon: '✕', title: 'Clear all filters', text: 'If History looks unexpectedly empty, tap ✕ Clear all (appears whenever any filter is active) to reset everything at once.' },
+  { icon: '📊', title: 'Spending chart', text: 'The bar chart shows monthly totals for the last 6 months — or, when Custom date range is active, for every month within your chosen range.' },
+  { icon: '🔒', title: 'Multi-user login', text: 'Go to Settings → enable Require Login → add a username and password. Each household member gets their own account on the shared budget.' },
+  { icon: '👥', title: 'Adding users', text: 'Once login is enabled, open Settings at any time to add more users. Existing users are never signed out when you add someone new.' },
+  { icon: '🏷️', title: 'Income categories', text: 'Tap Manage → Income tab to add, rename or recolor income categories (Salary, Freelance, Bonus, etc.) with custom colors.' },
+  { icon: '💡', title: 'Net balance', text: 'The Net Balance card shows income minus expenses for the current period — green means surplus, red means deficit.' },
+  { icon: '📱', title: 'Install as app', text: 'On mobile, use your browser\'s "Add to Home Screen" option to install Expensio as an icon for quick one-tap access.' },
+];
 
-function _renderTip() {
-  const tip = TIPS[_tipIndex];
-  document.getElementById('tipText').textContent    = tip.icon + '  ' + tip.text;
-  document.getElementById('tipCounter').textContent = (_tipIndex + 1) + ' / ' + TIPS.length;
+// ── Auto tip card (one per session) ───────────────────────────
+let _tipIndex = 0;
+let _tipTimer = null;
+
+function _renderAutoTip() {
+  const tip = ALL_TIPS[_tipIndex];
+  document.getElementById('tipIcon').textContent    = tip.icon;
+  document.getElementById('tipText').textContent    = tip.text;
+  document.getElementById('tipCounter').textContent = (_tipIndex + 1) + ' / ' + ALL_TIPS.length;
 }
 
 function showTipBanner() {
-  // Once per browser session
+  const isNew = !localStorage.getItem('expensio_visited');
+  if (isNew) {
+    // New user → open Getting Started guide instead
+    localStorage.setItem('expensio_visited', '1');
+    openGuideModal('gs');
+    return;
+  }
+  // Returning user → show one centered tip card, once per session
   if (sessionStorage.getItem('expensio_tip_shown')) return;
   sessionStorage.setItem('expensio_tip_shown', '1');
-  // Resume from last tip seen
-  _tipIndex = Math.min(parseInt(localStorage.getItem('expensio_tip_idx') || '0', 10), TIPS.length - 1);
-  _renderTip();
-  setTimeout(() => document.getElementById('tipBanner').classList.add('show'), 2800);
-  _tipTimer = setTimeout(dismissTip, 18000); // auto-hide after 18 s
+  _tipIndex = Math.min(parseInt(localStorage.getItem('expensio_tip_idx') || '0', 10), ALL_TIPS.length - 1);
+  _renderAutoTip();
+  setTimeout(() => document.getElementById('tipScrim').classList.add('show'), 2800);
+  _tipTimer = setTimeout(dismissTip, 20000);
 }
 
 window.nextTip = function() {
-  _tipIndex = (_tipIndex + 1) % TIPS.length;
+  _tipIndex = (_tipIndex + 1) % ALL_TIPS.length;
   localStorage.setItem('expensio_tip_idx', _tipIndex);
-  _renderTip();
+  _renderAutoTip();
   clearTimeout(_tipTimer);
-  _tipTimer = setTimeout(dismissTip, 18000);
+  _tipTimer = setTimeout(dismissTip, 20000);
 };
 
 window.dismissTip = function() {
   clearTimeout(_tipTimer);
-  document.getElementById('tipBanner').classList.remove('show');
+  document.getElementById('tipScrim').classList.remove('show');
+};
+
+// ── Guide modal ────────────────────────────────────────────────
+let _guideTab   = 'gs';
+let _guideIndex = 0;
+
+function _currentList() { return _guideTab === 'gs' ? GETTING_STARTED : ALL_TIPS; }
+
+function _renderGuideCard() {
+  const list = _currentList();
+  const card = list[_guideIndex];
+  document.getElementById('guideCardIcon').textContent  = card.icon;
+  document.getElementById('guideCardTitle').textContent = card.title;
+  document.getElementById('guideCardText').textContent  = card.text;
+  // Dots
+  const dots = document.getElementById('guideDots');
+  dots.innerHTML = list.map((_, i) =>
+    `<div class="guide-dot${i === _guideIndex ? ' active' : ''}"></div>`).join('');
+  // Buttons
+  document.getElementById('guidePrevBtn').disabled = _guideIndex === 0;
+  document.getElementById('guidePrevBtn').style.opacity = _guideIndex === 0 ? '0.35' : '';
+  const isLast = _guideIndex === list.length - 1;
+  const nextBtn = document.getElementById('guideNextBtn');
+  nextBtn.textContent = isLast ? (_guideTab === 'gs' ? 'Explore all tips →' : 'Done') : 'Next →';
+}
+
+window.openGuideModal = function(tab) {
+  _guideTab   = tab || 'gs';
+  _guideIndex = 0;
+  document.getElementById('guideTabGs').classList.toggle('active',  _guideTab === 'gs');
+  document.getElementById('guideTabAll').classList.toggle('active', _guideTab === 'all');
+  _renderGuideCard();
+  document.getElementById('guideModal').classList.add('open');
+};
+
+window.closeGuideModal = function() {
+  document.getElementById('guideModal').classList.remove('open');
+};
+
+window.switchGuideTab = function(tab) {
+  _guideTab   = tab;
+  _guideIndex = 0;
+  document.getElementById('guideTabGs').classList.toggle('active',  tab === 'gs');
+  document.getElementById('guideTabAll').classList.toggle('active', tab === 'all');
+  _renderGuideCard();
+};
+
+window.guideNav = function(dir) {
+  const list = _currentList();
+  if (dir === 1 && _guideIndex === list.length - 1) {
+    if (_guideTab === 'gs') { switchGuideTab('all'); return; }
+    closeGuideModal(); return;
+  }
+  _guideIndex = Math.max(0, Math.min(list.length - 1, _guideIndex + dir));
+  _renderGuideCard();
 };
 
 // ── Init ───────────────────────────────────────────────────────
