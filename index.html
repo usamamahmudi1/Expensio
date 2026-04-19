@@ -207,6 +207,11 @@ textarea { resize: vertical; min-height: 58px; }
 .recurring-chip { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted); cursor: pointer; white-space: nowrap; user-select: none; }
 .recurring-chip input { width: auto; margin: 0; cursor: pointer; accent-color: var(--accent); }
 .filter-date { padding: 0.5rem 0.85rem; font-size: 0.88rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; }
+.range-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.range-row span { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.range-row input[type="date"] { padding: 0.45rem 0.75rem; font-size: 0.85rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; }
+.range-row input[type="date"]:focus { border-color: var(--accent); }
+.range-badge { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; background: var(--accent-soft); color: var(--accent); border-radius: 99px; padding: 0.15rem 0.6rem; margin-left: 0.4rem; vertical-align: middle; }
 .filter-date:focus { border-color: var(--accent); }
 .filter-date.active { border-color: var(--accent); background: var(--accent-soft); }
 .day-filter-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -417,12 +422,12 @@ textarea { resize: vertical; min-height: 58px; }
 
   <div class="summary-grid">
     <div class="stat-card budget-card">
-      <div class="stat-label">Month Spent</div>
+      <div class="stat-label" id="monthCardLabel">Month Spent</div>
       <div class="stat-value" id="monthTotal">—</div>
       <div class="stat-sub" id="monthCount">0 expenses</div>
     </div>
     <div class="stat-card income-card">
-      <div class="stat-label">Month Income</div>
+      <div class="stat-label" id="monthIncCardLabel">Month Income</div>
       <div class="stat-value" id="monthIncomeTotal">—</div>
       <div class="stat-sub" id="monthIncomeCount">0 payments</div>
     </div>
@@ -594,13 +599,22 @@ textarea { resize: vertical; min-height: 58px; }
         <button class="export-btn" onclick="window.print()">⎙ Print / PDF</button>
       </div>
       <div class="tabs">
-        <button class="tab active" onclick="setFilter('day',this)">Today</button>
-        <button class="tab" onclick="setFilter('week',this)">Week</button>
-        <button class="tab" onclick="setFilter('month',this)">Month</button>
-        <button class="tab" onclick="setFilter('year',this)">Year</button>
-        <button class="tab" onclick="setFilter('all',this)">All</button>
+        <button class="tab active" id="tabDay"    onclick="setFilter('day',this)">Today</button>
+        <button class="tab"        id="tabWeek"   onclick="setFilter('week',this)">Week</button>
+        <button class="tab"        id="tabMonth"  onclick="setFilter('month',this)">Month</button>
+        <button class="tab"        id="tabYear"   onclick="setFilter('year',this)">Year</button>
+        <button class="tab"        id="tabAll"    onclick="setFilter('all',this)">All</button>
+        <button class="tab"        id="tabCustom" onclick="setFilter('custom',this)">Custom</button>
       </div>
     </div>
+  </div>
+
+  <div class="range-row" id="customRangeRow" style="display:none;">
+    <span>From</span>
+    <input type="date" id="rangeFrom" onchange="applyCustomRange()" />
+    <span>to</span>
+    <input type="date" id="rangeTo" onchange="applyCustomRange()" />
+    <button class="clear-link" id="clearRangeBtn" onclick="clearCustomRange()" style="display:none;">✕ Clear range</button>
   </div>
 
   <div class="filter-bar">
@@ -764,6 +778,20 @@ textarea { resize: vertical; min-height: 58px; }
              style="width:70px;text-align:center;"
              oninput="previewCycle(this.value)"
              onchange="setCycleStart(this.value)" />
+    </div>
+    <hr class="modal-divider">
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Default view</div>
+        <div class="settings-sub">Period shown on app open</div>
+      </div>
+      <select id="defaultViewSelect" onchange="setDefaultView(this.value)">
+        <option value="day">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+        <option value="year">This Year</option>
+        <option value="all">All time</option>
+      </select>
     </div>
     <hr class="modal-divider">
     <button class="btn btn-outline" onclick="closeSettingsModal()">Close</button>
@@ -954,6 +982,9 @@ let editingId       = null;
 let filterDate      = '';
 let filterDays      = [];
 let typeFilter      = 'all';
+let customRangeFrom = '';
+let customRangeTo   = '';
+let defaultView     = 'month';
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -1030,10 +1061,14 @@ function filterExpenses(f) {
   const now = new Date();
   return expenses.filter(e => {
     const d = new Date(e.date + 'T12:00:00');
-    if (f === 'day')   return e.date === today();
-    if (f === 'week')  { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
-    if (f === 'month') { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
-    if (f === 'year')  return d.getFullYear() === now.getFullYear();
+    if (f === 'day')    return e.date === today();
+    if (f === 'week')   { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
+    if (f === 'month')  { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
+    if (f === 'year')   return d.getFullYear() === now.getFullYear();
+    if (f === 'custom') {
+      if (!customRangeFrom || !customRangeTo) return true;
+      return d >= new Date(customRangeFrom + 'T00:00:00') && d <= new Date(customRangeTo + 'T23:59:59');
+    }
     return true;
   });
 }
@@ -1041,8 +1076,10 @@ function sum(arr) { return arr.reduce((a, e) => a + e.amount, 0); }
 
 // ── Summary cards + budget bar ─────────────────────────────────
 function updateSummary() {
-  const mo = filterExpenses('month'), we = filterExpenses('week'),
-        da = filterExpenses('day'),   yr = filterExpenses('year');
+  const isCustom  = currentFilter === 'custom' && customRangeFrom && customRangeTo;
+  const moPeriod  = isCustom ? 'custom' : 'month';
+  const mo = filterExpenses(moPeriod), we = filterExpenses('week'),
+        da = filterExpenses('day'),    yr = filterExpenses('year');
 
   const set = (id, val, count) => {
     document.getElementById(id + 'Total').textContent = fmt(val);
@@ -1053,7 +1090,14 @@ function updateSummary() {
   set('today', sum(da), da.length);
   set('year',  sum(yr), yr.length);
 
-  const moInc       = filterIncome('month');
+  // Adapt month card labels
+  const periodLabel = isCustom
+    ? customRangeFrom + ' – ' + customRangeTo
+    : null;
+  document.getElementById('monthCardLabel').textContent    = isCustom ? 'Period Spent'  : 'Month Spent';
+  document.getElementById('monthIncCardLabel').textContent = isCustom ? 'Period Income' : 'Month Income';
+
+  const moInc       = filterIncome(moPeriod);
   const monthIncome = sum(moInc);
   document.getElementById('monthIncomeTotal').textContent = fmt(monthIncome);
   document.getElementById('monthIncomeCount').textContent = moInc.length + ' payment' + (moInc.length !== 1 ? 's' : '');
@@ -1061,7 +1105,8 @@ function updateSummary() {
   const spent = sum(mo);
   const balance = monthIncome - spent;
   document.getElementById('balanceValue').textContent = fmt(Math.abs(balance));
-  document.getElementById('balanceSub').textContent   = balance >= 0 ? 'surplus this month' : 'deficit this month';
+  const periodWord = isCustom ? 'in period' : 'this month';
+  document.getElementById('balanceSub').textContent = balance >= 0 ? 'surplus ' + periodWord : 'deficit ' + periodWord;
   const bc = document.getElementById('balanceCard');
   bc.className = 'stat-card ' + (balance >= 0 ? 'balance-pos' : 'balance-neg');
   const fill  = document.getElementById('budgetFill');
@@ -1072,7 +1117,7 @@ function updateSummary() {
     document.getElementById('budgetLabel').textContent = fmt(spent) + ' / ' + fmt(budget);
     const rem = budget - spent;
     document.getElementById('budgetRemain').textContent = rem >= 0
-      ? fmt(rem) + ' remaining this month'
+      ? fmt(rem) + ' remaining ' + periodWord
       : fmt(Math.abs(rem)) + ' over budget!';
   } else {
     fill.style.width = '0%';
@@ -1083,14 +1128,15 @@ function updateSummary() {
 
 // ── Category breakdown ─────────────────────────────────────────
 function updateCatBreakdown() {
-  const mo    = filterExpenses('month');
+  const isCustom = currentFilter === 'custom' && customRangeFrom && customRangeTo;
+  const mo    = filterExpenses(isCustom ? 'custom' : 'month');
   const cats  = {};
   mo.forEach(e => { cats[e.category] = (cats[e.category] || 0) + e.amount; });
   const total  = sum(mo) || 1;
   const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
   const el     = document.getElementById('catBreakdown');
   if (!sorted.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No expenses this month.</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No expenses this ' + (isCustom ? 'period' : 'month') + '.</div>';
     return;
   }
   el.innerHTML = sorted.map(([name, amt]) => {
@@ -1109,9 +1155,21 @@ function updateCatBreakdown() {
 function renderChart() {
   const now    = new Date();
   const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleString('default', { month: 'short' }) });
+  const isCustom = currentFilter === 'custom' && customRangeFrom && customRangeTo;
+  if (isCustom) {
+    let cur = new Date(customRangeFrom + 'T12:00:00');
+    const end = new Date(customRangeTo + 'T12:00:00');
+    cur = new Date(cur.getFullYear(), cur.getMonth(), 1);
+    while (cur <= end) {
+      months.push({ year: cur.getFullYear(), month: cur.getMonth(), label: cur.toLocaleString('default', { month: 'short' }) + ' ' + String(cur.getFullYear()).slice(2) });
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      if (months.length >= 24) break; // safety cap
+    }
+  } else {
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleString('default', { month: 'short' }) });
+    }
   }
   const totals = months.map(m =>
     expenses
@@ -1126,15 +1184,16 @@ function renderChart() {
   }
 
   const max       = Math.max(...totals, 1);
+  const n         = months.length || 1;
   const W         = 600, H = 160, padX = 16, padBot = 22, barAreaH = H - padBot - 16;
-  const slotW     = (W - padX * 2) / 6;
-  const barW      = slotW * 0.52;
+  const slotW     = (W - padX * 2) / n;
+  const barW      = Math.min(slotW * 0.52, 48);
 
   const bars = months.map((m, i) => {
     const barH  = Math.max((totals[i] / max) * barAreaH, totals[i] > 0 ? 3 : 0);
     const x     = padX + i * slotW + (slotW - barW) / 2;
     const y     = H - padBot - barH;
-    const op    = i === 5 ? '1' : '0.38';
+    const op    = (isCustom ? i === months.length - 1 : i === 5) ? '1' : '0.38';
     const label = totals[i] > 0
       ? `<text x="${(x + barW / 2).toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="DM Sans,sans-serif">${fmtCompact(totals[i])}</text>`
       : '';
@@ -1157,8 +1216,12 @@ function filterIncome(f) {
     const d = new Date(e.date + 'T12:00:00');
     if (f === 'day')   return e.date === today();
     if (f === 'week')  { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
-    if (f === 'month') { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
-    if (f === 'year')  return d.getFullYear() === now.getFullYear();
+    if (f === 'month')  { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
+    if (f === 'year')   return d.getFullYear() === now.getFullYear();
+    if (f === 'custom') {
+      if (!customRangeFrom || !customRangeTo) return true;
+      return d >= new Date(customRangeFrom + 'T00:00:00') && d <= new Date(customRangeTo + 'T23:59:59');
+    }
     return true;
   });
 }
@@ -1271,8 +1334,19 @@ async function loadSettings() {
     if (prefSnap.exists() && prefSnap.data().cycleStart) {
       monthCycleStart = prefSnap.data().cycleStart;
     }
+    if (prefSnap.exists() && prefSnap.data().defaultView) {
+      defaultView = prefSnap.data().defaultView;
+    }
   } catch(e) { console.warn('Settings load error', e); }
   populateCatSelects();
+  // Apply default view
+  if (defaultView !== 'day') {
+    currentFilter = defaultView;
+    const tabMap = { day: 'tabDay', week: 'tabWeek', month: 'tabMonth', year: 'tabYear', all: 'tabAll' };
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    const tabEl = document.getElementById(tabMap[defaultView]);
+    if (tabEl) tabEl.classList.add('active');
+  }
 }
 
 // ── Real-time listener ─────────────────────────────────────────
@@ -1401,7 +1475,27 @@ window.setFilter = function(f, el) {
   currentFilter = f;
   document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  renderList();
+  document.getElementById('customRangeRow').style.display = f === 'custom' ? '' : 'none';
+  refresh();
+};
+
+window.applyCustomRange = function() {
+  const from = document.getElementById('rangeFrom').value;
+  const to   = document.getElementById('rangeTo').value;
+  if (from && to && from > to) { showToast('From date must be before To date.'); return; }
+  customRangeFrom = from;
+  customRangeTo   = to;
+  document.getElementById('clearRangeBtn').style.display = (from || to) ? '' : 'none';
+  if (from && to) refresh();
+};
+
+window.clearCustomRange = function() {
+  customRangeFrom = '';
+  customRangeTo   = '';
+  document.getElementById('rangeFrom').value = '';
+  document.getElementById('rangeTo').value   = '';
+  document.getElementById('clearRangeBtn').style.display = 'none';
+  refresh();
 };
 function hasActiveFilters() {
   return searchQuery || catFilter || showRecurring || filterDate || filterDays.length > 0 || typeFilter !== 'all';
@@ -1445,15 +1539,26 @@ window.clearDateFilters = function() {
 window.clearAllFilters = function() {
   searchQuery  = '';  catFilter = '';  showRecurring = false;
   filterDate   = '';  filterDays = []; typeFilter    = 'all';
+  customRangeFrom = ''; customRangeTo = '';
   document.getElementById('searchInput').value        = '';
   document.getElementById('catFilterSelect').value    = '';
   document.getElementById('recurringToggle').checked  = false;
   document.getElementById('dateFilterInput').value    = '';
   document.getElementById('dateFilterInput').classList.remove('active');
+  document.getElementById('rangeFrom').value = '';
+  document.getElementById('rangeTo').value   = '';
+  document.getElementById('clearRangeBtn').style.display = 'none';
   [0,1,2,3,4,5,6].forEach(d => document.getElementById('day-' + d).classList.remove('active'));
   ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === 'all'));
+  // Switch back to default period tab
+  const tabMap = { day: 'tabDay', week: 'tabWeek', month: 'tabMonth', year: 'tabYear', all: 'tabAll' };
+  currentFilter = defaultView;
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById(tabMap[defaultView] || 'tabMonth');
+  if (tabEl) tabEl.classList.add('active');
+  document.getElementById('customRangeRow').style.display = 'none';
   updateClearAllBtn();
-  renderList();
+  refresh();
 };
 
 // ── Budget modal ───────────────────────────────────────────────
@@ -1714,10 +1819,19 @@ function cyclePeriodLabel(s) {
 }
 
 window.openSettingsModal = () => {
-  document.getElementById('currencySelect').value = currency;
-  document.getElementById('cycleStartInput').value = monthCycleStart;
+  document.getElementById('currencySelect').value    = currency;
+  document.getElementById('cycleStartInput').value   = monthCycleStart;
   document.getElementById('cyclePreview').textContent = 'Current period: ' + cyclePeriodLabel(monthCycleStart);
+  document.getElementById('defaultViewSelect').value = defaultView;
   document.getElementById('settingsModal').classList.add('open');
+};
+
+window.setDefaultView = async function(val) {
+  defaultView = val;
+  try {
+    await setDoc(doc(db, 'settings', 'preferences'), { currency, cycleStart: monthCycleStart, defaultView: val });
+    showToast('Default view updated!');
+  } catch(e) { showToast('Error saving setting.'); }
 };
 window.closeSettingsModal = () => document.getElementById('settingsModal').classList.remove('open');
 
