@@ -286,6 +286,30 @@ textarea { resize: vertical; min-height: 58px; }
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--ink); color: var(--paper); padding: 0.7rem 1.5rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500; z-index: 300; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
+/* ── Login overlay ──────────────────────────────────────────── */
+.login-overlay { position: fixed; inset: 0; background: var(--paper); z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+.login-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; box-shadow: 0 12px 48px rgba(0,0,0,0.13); }
+.login-logo { font-family: 'DM Serif Display', serif; font-size: 2.2rem; text-align: center; margin-bottom: 0.2rem; color: var(--ink); }
+.login-logo span { color: var(--accent); }
+.login-sub { text-align: center; font-size: 0.84rem; color: var(--muted); margin-bottom: 1.75rem; }
+.login-error { color: var(--accent); font-size: 0.82rem; margin-top: 0.75rem; min-height: 1.2em; text-align: center; }
+
+/* ── Toggle switch ──────────────────────────────────────────── */
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 99px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle-switch input:checked + .toggle-slider { background: var(--green); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* ── User list items ────────────────────────────────────────── */
+.user-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.75rem; background: var(--paper); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0.4rem; }
+.user-item-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
+.user-item-you { font-size: 0.7rem; color: var(--green); background: var(--green-soft); padding: 0.1rem 0.45rem; border-radius: 99px; font-weight: 600; }
+.user-item-del { background: none; border: none; cursor: pointer; color: var(--muted); opacity: 0.55; font-size: 0.9rem; padding: 2px 6px; transition: opacity 0.15s; }
+.user-item-del:hover { opacity: 1; color: var(--accent); }
+.user-chip { font-size: 0.75rem; font-weight: 600; background: var(--accent-soft); color: var(--accent); border-radius: 99px; padding: 0.2rem 0.7rem; white-space: nowrap; }
+
 .input-with-btn { display: flex; }
 .input-with-btn input { border-radius: 8px 0 0 8px; flex: 1; }
 .input-action-btn {
@@ -379,6 +403,47 @@ textarea { resize: vertical; min-height: 58px; }
 </head>
 <body>
 
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">Expens<span>io</span></div>
+    <div class="login-sub" id="loginSubtitle">Sign in to continue</div>
+
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="loginUsername" placeholder="Enter username" autocomplete="username"
+               onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()" style="width:100%;margin-top:0.25rem;">Sign in</button>
+    </div>
+
+    <div id="setupForm" style="display:none;">
+      <div class="form-group">
+        <label>Choose a username</label>
+        <input type="text" id="setupUsername" placeholder="Username" autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="setupPassword" placeholder="At least 6 characters" autocomplete="new-password" />
+      </div>
+      <div class="form-group">
+        <label>Confirm password</label>
+        <input type="password" id="setupPasswordConfirm" placeholder="Repeat password" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')doSetup()" />
+      </div>
+      <button class="btn btn-primary" onclick="doSetup()" style="width:100%;margin-top:0.25rem;">Create account &amp; sign in</button>
+    </div>
+
+    <div id="loginError" class="login-error"></div>
+  </div>
+</div>
+
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-logo">Expens<span>io</span></div>
   <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
@@ -414,6 +479,8 @@ textarea { resize: vertical; min-height: 58px; }
         <line x1="3.5" y1="16.5" x2="9.5" y2="16.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
       </svg>
     </button>
+    <span class="user-chip" id="userChip" style="display:none;"></span>
+    <button class="icon-btn" id="logoutBtn" onclick="doLogout()" title="Sign out" style="display:none;">⏻</button>
     <button class="icon-btn" onclick="openSettingsModal()" title="Settings">⚙</button>
   </div>
 </header>
@@ -794,6 +861,26 @@ textarea { resize: vertical; min-height: 58px; }
       </select>
     </div>
     <hr class="modal-divider">
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Require login</div>
+        <div class="settings-sub">Password-protect this app</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="authEnabledToggle" onchange="setAuthEnabled(this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="usersSection" style="display:none;margin-top:0.75rem;">
+      <div class="settings-label" style="margin-bottom:0.5rem;">Users</div>
+      <div id="usersList"></div>
+      <div class="cat-add-row" style="margin-top:0.6rem;">
+        <input type="text"     id="newUserUsername" placeholder="Username" style="flex:1;min-width:0;" />
+        <input type="password" id="newUserPassword" placeholder="Password (≥6 chars)" style="flex:1;min-width:0;" />
+        <button class="btn btn-primary btn-sm" onclick="addUser()">Add</button>
+      </div>
+    </div>
+    <hr class="modal-divider">
     <button class="btn btn-outline" onclick="closeSettingsModal()">Close</button>
   </div>
 </div>
@@ -925,6 +1012,10 @@ import {
   getFirestore, collection, addDoc, deleteDoc, updateDoc, doc,
   onSnapshot, query, orderBy, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCt_sayrdZOAEbxQaQ-VChUthQ85MczoZ0",
@@ -935,8 +1026,189 @@ const firebaseConfig = {
   appId: "1:500697648860:web:9330f19bb1f7eb1597ae19"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app          = initializeApp(firebaseConfig);
+const secondaryApp = initializeApp(firebaseConfig, 'Secondary');
+const db           = getFirestore(app);
+const auth         = getAuth(app);
+const secondaryAuth = getAuth(secondaryApp);
+
+// ── Auth state ─────────────────────────────────────────────────
+let authEnabled    = false;
+let authUsersList  = [];   // [{ username, uid }]
+let currentAuthUser = null; // { username, uid }
+let _authResolved  = false;
+let _authResolve   = null;
+
+function usernameToEmail(u) {
+  return u.toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@expensio.app';
+}
+function showLoginError(msg) { document.getElementById('loginError').textContent = msg; }
+
+function showLoginScreen() {
+  const overlay = document.getElementById('loginOverlay');
+  overlay.style.display = '';
+  if (authUsersList.length === 0) {
+    document.getElementById('loginSubtitle').textContent = 'Create your first account';
+    document.getElementById('loginForm').style.display   = 'none';
+    document.getElementById('setupForm').style.display   = '';
+    setTimeout(() => document.getElementById('setupUsername').focus(), 50);
+  } else {
+    document.getElementById('loginSubtitle').textContent = 'Sign in to continue';
+    document.getElementById('loginForm').style.display   = '';
+    document.getElementById('setupForm').style.display   = 'none';
+    setTimeout(() => document.getElementById('loginUsername').focus(), 50);
+  }
+}
+function hideLoginOverlay() { document.getElementById('loginOverlay').style.display = 'none'; }
+
+function updateUserDisplay() {
+  const chip = document.getElementById('userChip');
+  const btn  = document.getElementById('logoutBtn');
+  if (authEnabled && currentAuthUser) {
+    chip.textContent  = currentAuthUser.username;
+    chip.style.display = '';
+    btn.style.display  = '';
+  } else {
+    chip.style.display = 'none';
+    btn.style.display  = 'none';
+  }
+}
+
+async function handleAuthState(user) {
+  if (user) {
+    const found = authUsersList.find(u => u.uid === user.uid);
+    if (found || !authEnabled) {
+      currentAuthUser = found || { username: user.email.split('@')[0], uid: user.uid };
+      updateUserDisplay();
+      hideLoginOverlay();
+      if (!_authResolved) { _authResolved = true; _authResolve(); }
+    } else {
+      await signOut(auth); // removed from list — boot them
+    }
+  } else {
+    currentAuthUser = null;
+    updateUserDisplay();
+    if (!authEnabled) {
+      hideLoginOverlay();
+      if (!_authResolved) { _authResolved = true; _authResolve(); }
+    } else {
+      showLoginScreen();
+    }
+  }
+}
+
+async function loadAuthSettings() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'auth'));
+    if (snap.exists()) {
+      authEnabled   = snap.data().enabled === true;
+      authUsersList = snap.data().users   || [];
+    }
+  } catch(e) { console.warn('Auth load error', e); }
+}
+
+async function saveAuthSettings() {
+  await setDoc(doc(db, 'settings', 'auth'), { enabled: authEnabled, users: authUsersList });
+}
+
+async function initAuth() {
+  await loadAuthSettings();
+  return new Promise(resolve => {
+    _authResolve = resolve;
+    onAuthStateChanged(auth, handleAuthState);
+  });
+}
+
+window.doLogin = async function() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!username || !password) { showLoginError('Please enter username and password.'); return; }
+  const found = authUsersList.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!found) { showLoginError('Invalid username or password.'); return; }
+  showLoginError('');
+  try {
+    await signInWithEmailAndPassword(auth, usernameToEmail(found.username), password);
+  } catch(e) {
+    showLoginError('Invalid username or password.');
+  }
+};
+
+window.doSetup = async function() {
+  const username = document.getElementById('setupUsername').value.trim();
+  const password = document.getElementById('setupPassword').value;
+  const confirm  = document.getElementById('setupPasswordConfirm').value;
+  if (!username)           { showLoginError('Please enter a username.'); return; }
+  if (password.length < 6) { showLoginError('Password must be at least 6 characters.'); return; }
+  if (password !== confirm) { showLoginError('Passwords do not match.'); return; }
+  showLoginError('');
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, usernameToEmail(username), password);
+    authUsersList.push({ username, uid: cred.user.uid });
+    await saveAuthSettings();
+    // onAuthStateChanged fires automatically
+  } catch(e) {
+    showLoginError(e.code === 'auth/email-already-in-use' ? 'Username taken — try another.' : 'Could not create account.');
+  }
+};
+
+window.doLogout = async function() {
+  await signOut(auth);
+  // handleAuthState fires with null → shows login if authEnabled
+};
+
+window.addUser = async function() {
+  const username = document.getElementById('newUserUsername').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  if (!username)           { showToast('Enter a username.'); return; }
+  if (password.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+  if (authUsersList.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+    showToast('Username already exists.'); return;
+  }
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, usernameToEmail(username), password);
+    await signOut(secondaryAuth);
+    authUsersList.push({ username, uid: cred.user.uid });
+    await saveAuthSettings();
+    document.getElementById('newUserUsername').value = '';
+    document.getElementById('newUserPassword').value = '';
+    renderUsersList();
+    showToast('User added!');
+  } catch(e) {
+    showToast(e.code === 'auth/email-already-in-use' ? 'Username taken.' : 'Error creating user.');
+  }
+};
+
+window.removeUser = async function(uid) {
+  if (currentAuthUser && currentAuthUser.uid === uid) { showToast('Cannot remove yourself.'); return; }
+  if (!confirm('Remove this user?')) return;
+  authUsersList = authUsersList.filter(u => u.uid !== uid);
+  await saveAuthSettings();
+  renderUsersList();
+  showToast('User removed.');
+};
+
+window.setAuthEnabled = async function(enabled) {
+  authEnabled = enabled;
+  document.getElementById('usersSection').style.display = enabled ? '' : 'none';
+  await saveAuthSettings();
+  updateUserDisplay();
+  showToast(enabled ? 'Login now required.' : 'Login requirement disabled.');
+};
+
+function renderUsersList() {
+  const el = document.getElementById('usersList');
+  if (!authUsersList.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;margin-bottom:0.5rem;">No users yet.</div>';
+    return;
+  }
+  el.innerHTML = authUsersList.map(u => {
+    const isYou = currentAuthUser && currentAuthUser.uid === u.uid;
+    return `<div class="user-item">
+      <div class="user-item-name">${u.username}${isYou ? ' <span class="user-item-you">you</span>' : ''}</div>
+      ${isYou ? '' : `<button class="user-item-del" onclick="removeUser('${u.uid}')" title="Remove">✕</button>`}
+    </div>`;
+  }).join('');
+}
 
 const DEFAULT_CATEGORIES = [
   { name: 'Food & Drink',    color: '#c84b2f' },
@@ -1823,6 +2095,9 @@ window.openSettingsModal = () => {
   document.getElementById('cycleStartInput').value   = monthCycleStart;
   document.getElementById('cyclePreview').textContent = 'Current period: ' + cyclePeriodLabel(monthCycleStart);
   document.getElementById('defaultViewSelect').value = defaultView;
+  document.getElementById('authEnabledToggle').checked = authEnabled;
+  document.getElementById('usersSection').style.display = authEnabled ? '' : 'none';
+  renderUsersList();
   document.getElementById('settingsModal').classList.add('open');
 };
 
@@ -2314,6 +2589,7 @@ document.getElementById('headerDate').textContent = new Date().toLocaleDateStrin
 setDefaultDate();
 syncDarkBtn();
 setSyncStatus('syncing', 'Connecting…');
+await initAuth();
 await loadSettings();
 startListener();
 startIncomeListener();
