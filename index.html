@@ -755,6 +755,17 @@ textarea { resize: vertical; min-height: 58px; }
       </select>
     </div>
     <hr class="modal-divider">
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Month cycle start day</div>
+        <div class="settings-sub" id="cyclePreview"></div>
+      </div>
+      <input type="number" id="cycleStartInput" min="1" max="28" value="1"
+             style="width:70px;text-align:center;"
+             oninput="previewCycle(this.value)"
+             onchange="setCycleStart(this.value)" />
+    </div>
+    <hr class="modal-divider">
     <button class="btn btn-outline" onclick="closeSettingsModal()">Close</button>
   </div>
 </div>
@@ -928,8 +939,9 @@ const CURRENCIES = {
 
 let expenses        = [];
 let income          = [];
-let budget          = 0;
-let currency        = 'SEK';
+let budget           = 0;
+let currency         = 'SEK';
+let monthCycleStart  = 1;
 let categories       = [...DEFAULT_CATEGORIES];
 let incomeCategories = [...DEFAULT_INCOME_CATEGORIES];
 let formMode        = 'expense';
@@ -989,6 +1001,30 @@ function catColor(name) {
   return c ? c.color : '#8a877e';
 }
 
+// ── Month cycle helper ─────────────────────────────────────────
+function getMonthRange() {
+  const now  = new Date();
+  const day  = now.getDate();
+  const s    = monthCycleStart;
+  let cycleStart, cycleEnd;
+  if (s === 1) {
+    cycleStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    cycleEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else {
+    // current cycle: starts on day s of the previous or current month
+    if (day >= s) {
+      cycleStart = new Date(now.getFullYear(), now.getMonth(), s);
+      cycleEnd   = new Date(now.getFullYear(), now.getMonth() + 1, s - 1);
+    } else {
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, s);
+      cycleEnd   = new Date(now.getFullYear(), now.getMonth(), s - 1);
+    }
+  }
+  cycleStart.setHours(0, 0, 0, 0);
+  cycleEnd.setHours(23, 59, 59, 999);
+  return { cycleStart, cycleEnd };
+}
+
 // ── Filter logic ───────────────────────────────────────────────
 function filterExpenses(f) {
   const now = new Date();
@@ -996,7 +1032,7 @@ function filterExpenses(f) {
     const d = new Date(e.date + 'T12:00:00');
     if (f === 'day')   return e.date === today();
     if (f === 'week')  { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
-    if (f === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (f === 'month') { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
     if (f === 'year')  return d.getFullYear() === now.getFullYear();
     return true;
   });
@@ -1121,7 +1157,7 @@ function filterIncome(f) {
     const d = new Date(e.date + 'T12:00:00');
     if (f === 'day')   return e.date === today();
     if (f === 'week')  { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
-    if (f === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (f === 'month') { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
     if (f === 'year')  return d.getFullYear() === now.getFullYear();
     return true;
   });
@@ -1231,6 +1267,9 @@ async function loadSettings() {
     }
     if (incCatsSnap.exists() && incCatsSnap.data().list?.length) {
       incomeCategories = incCatsSnap.data().list;
+    }
+    if (prefSnap.exists() && prefSnap.data().cycleStart) {
+      monthCycleStart = prefSnap.data().cycleStart;
     }
   } catch(e) { console.warn('Settings load error', e); }
   populateCatSelects();
@@ -1668,13 +1707,44 @@ async function saveIncomeCategories() {
 }
 
 // ── Settings modal ─────────────────────────────────────────────
-window.openSettingsModal  = () => { document.getElementById('currencySelect').value = currency; document.getElementById('settingsModal').classList.add('open'); };
+function cyclePeriodLabel(s) {
+  const { cycleStart, cycleEnd } = getMonthRange();
+  const fmt = d => d.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+  return fmt(cycleStart) + ' – ' + fmt(cycleEnd);
+}
+
+window.openSettingsModal = () => {
+  document.getElementById('currencySelect').value = currency;
+  document.getElementById('cycleStartInput').value = monthCycleStart;
+  document.getElementById('cyclePreview').textContent = 'Current period: ' + cyclePeriodLabel(monthCycleStart);
+  document.getElementById('settingsModal').classList.add('open');
+};
 window.closeSettingsModal = () => document.getElementById('settingsModal').classList.remove('open');
+
+window.previewCycle = function(val) {
+  const s = Math.min(28, Math.max(1, parseInt(val) || 1));
+  const orig = monthCycleStart;
+  monthCycleStart = s;
+  document.getElementById('cyclePreview').textContent = 'Current period: ' + cyclePeriodLabel(s);
+  monthCycleStart = orig;
+};
+
+window.setCycleStart = async function(val) {
+  const s = Math.min(28, Math.max(1, parseInt(val) || 1));
+  document.getElementById('cycleStartInput').value = s;
+  monthCycleStart = s;
+  document.getElementById('cyclePreview').textContent = 'Current period: ' + cyclePeriodLabel(s);
+  try {
+    await setDoc(doc(db, 'settings', 'preferences'), { currency, cycleStart: s });
+    refresh();
+    showToast('Month cycle updated!');
+  } catch(e) { showToast('Error saving cycle.'); }
+};
 
 window.setCurrency = async function(val) {
   currency = val;
   try {
-    await setDoc(doc(db, 'settings', 'preferences'), { currency: val });
+    await setDoc(doc(db, 'settings', 'preferences'), { currency: val, cycleStart: monthCycleStart });
     refresh();
     showToast('Currency updated!');
   } catch(e) { showToast('Error saving currency.'); }
