@@ -438,6 +438,7 @@ textarea { resize: vertical; min-height: 58px; }
                onkeydown="if(event.key==='Enter')doSetup()" />
       </div>
       <button class="btn btn-primary" onclick="doSetup()" style="width:100%;margin-top:0.25rem;">Create account &amp; sign in</button>
+      <button class="btn btn-outline" onclick="cancelAuthSetup()" style="width:100%;margin-top:0.5rem;font-size:0.82rem;">Continue without login</button>
     </div>
 
     <div id="loginError" class="login-error"></div>
@@ -1012,10 +1013,6 @@ import {
   getFirestore, collection, addDoc, deleteDoc, updateDoc, doc,
   onSnapshot, query, orderBy, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCt_sayrdZOAEbxQaQ-VChUthQ85MczoZ0",
@@ -1026,46 +1023,48 @@ const firebaseConfig = {
   appId: "1:500697648860:web:9330f19bb1f7eb1597ae19"
 };
 
-const app          = initializeApp(firebaseConfig);
-const secondaryApp = initializeApp(firebaseConfig, 'Secondary');
-const db           = getFirestore(app);
-const auth         = getAuth(app);
-const secondaryAuth = getAuth(secondaryApp);
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-// ── Auth state ─────────────────────────────────────────────────
-let authEnabled    = false;
-let authUsersList  = [];   // [{ username, uid }]
-let currentAuthUser = null; // { username, uid }
-let _authResolved  = false;
-let _authResolve   = null;
+// ── Auth (Firestore + Web Crypto — no Firebase Auth needed) ────
+let authEnabled     = false;
+let authUsersList   = [];    // [{ username, passwordHash }]
+let currentAuthUser = null;  // { username }
+let _authResolve    = null;
 
-function usernameToEmail(u) {
-  return u.toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@expensio.app';
+async function hashPassword(pw) {
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('expensio:' + pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
 function showLoginError(msg) { document.getElementById('loginError').textContent = msg; }
 
 function showLoginScreen() {
-  const overlay = document.getElementById('loginOverlay');
-  overlay.style.display = '';
-  if (authUsersList.length === 0) {
-    document.getElementById('loginSubtitle').textContent = 'Create your first account';
-    document.getElementById('loginForm').style.display   = 'none';
-    document.getElementById('setupForm').style.display   = '';
-    setTimeout(() => document.getElementById('setupUsername').focus(), 50);
-  } else {
-    document.getElementById('loginSubtitle').textContent = 'Sign in to continue';
-    document.getElementById('loginForm').style.display   = '';
-    document.getElementById('setupForm').style.display   = 'none';
-    setTimeout(() => document.getElementById('loginUsername').focus(), 50);
-  }
+  document.getElementById('loginOverlay').style.display = '';
+  const noUsers = authUsersList.length === 0;
+  document.getElementById('loginSubtitle').textContent = noUsers ? 'Create your first account' : 'Sign in to continue';
+  document.getElementById('loginForm').style.display   = noUsers ? 'none' : '';
+  document.getElementById('setupForm').style.display   = noUsers ? '' : 'none';
+  document.getElementById('loginError').textContent    = '';
+  setTimeout(() => {
+    const f = document.getElementById(noUsers ? 'setupUsername' : 'loginUsername');
+    if (f) f.focus();
+  }, 60);
 }
+
 function hideLoginOverlay() { document.getElementById('loginOverlay').style.display = 'none'; }
+
+function _authDone() {
+  updateUserDisplay();
+  hideLoginOverlay();
+  if (_authResolve) { _authResolve(); _authResolve = null; }
+}
 
 function updateUserDisplay() {
   const chip = document.getElementById('userChip');
   const btn  = document.getElementById('logoutBtn');
   if (authEnabled && currentAuthUser) {
-    chip.textContent  = currentAuthUser.username;
+    chip.textContent   = currentAuthUser.username;
     chip.style.display = '';
     btn.style.display  = '';
   } else {
@@ -1074,49 +1073,35 @@ function updateUserDisplay() {
   }
 }
 
-async function handleAuthState(user) {
-  if (user) {
-    const found = authUsersList.find(u => u.uid === user.uid);
-    if (found || !authEnabled) {
-      currentAuthUser = found || { username: user.email.split('@')[0], uid: user.uid };
-      updateUserDisplay();
-      hideLoginOverlay();
-      if (!_authResolved) { _authResolved = true; _authResolve(); }
-    } else {
-      await signOut(auth); // removed from list — boot them
-    }
-  } else {
-    currentAuthUser = null;
-    updateUserDisplay();
-    if (!authEnabled) {
-      hideLoginOverlay();
-      if (!_authResolved) { _authResolved = true; _authResolve(); }
-    } else {
-      showLoginScreen();
-    }
-  }
-}
-
 async function loadAuthSettings() {
   try {
     const snap = await getDoc(doc(db, 'settings', 'auth'));
     if (snap.exists()) {
       authEnabled   = snap.data().enabled === true;
-      authUsersList = snap.data().users   || [];
+      // Support old uid-based format and new hash-based format
+      authUsersList = (snap.data().users || []).filter(u => u.username);
     }
   } catch(e) { console.warn('Auth load error', e); }
 }
 
 async function saveAuthSettings() {
-  await setDoc(doc(db, 'settings', 'auth'), { enabled: authEnabled, users: authUsersList });
+  try { await setDoc(doc(db, 'settings', 'auth'), { enabled: authEnabled, users: authUsersList }); }
+  catch(e) { showToast('Error saving auth settings.'); }
 }
 
 async function initAuth() {
   await loadAuthSettings();
-  return new Promise(resolve => {
-    _authResolve = resolve;
-    onAuthStateChanged(auth, handleAuthState);
-  });
+  if (!authEnabled) { _authDone(); return; }
+  // Check localStorage session
+  try {
+    const saved = JSON.parse(localStorage.getItem('expensio_session') || 'null');
+    if (saved && authUsersList.find(u => u.username === saved.username)) {
+      currentAuthUser = { username: saved.username };
+      _authDone(); return;
+    }
+  } catch(_) {}
+  // Need to show login
+  return new Promise(resolve => { _authResolve = resolve; showLoginScreen(); });
 }
 
 window.doLogin = async function() {
@@ -1125,63 +1110,65 @@ window.doLogin = async function() {
   if (!username || !password) { showLoginError('Please enter username and password.'); return; }
   const found = authUsersList.find(u => u.username.toLowerCase() === username.toLowerCase());
   if (!found) { showLoginError('Invalid username or password.'); return; }
-  showLoginError('');
-  try {
-    await signInWithEmailAndPassword(auth, usernameToEmail(found.username), password);
-  } catch(e) {
-    showLoginError('Invalid username or password.');
-  }
+  const hash = await hashPassword(password);
+  if (hash !== found.passwordHash) { showLoginError('Invalid username or password.'); return; }
+  currentAuthUser = { username: found.username };
+  localStorage.setItem('expensio_session', JSON.stringify(currentAuthUser));
+  _authDone();
 };
 
 window.doSetup = async function() {
   const username = document.getElementById('setupUsername').value.trim();
   const password = document.getElementById('setupPassword').value;
   const confirm  = document.getElementById('setupPasswordConfirm').value;
-  if (!username)           { showLoginError('Please enter a username.'); return; }
-  if (password.length < 6) { showLoginError('Password must be at least 6 characters.'); return; }
-  if (password !== confirm) { showLoginError('Passwords do not match.'); return; }
+  if (!username)            { showLoginError('Please enter a username.'); return; }
+  if (password.length < 6)  { showLoginError('Password must be at least 6 characters.'); return; }
+  if (password !== confirm)  { showLoginError('Passwords do not match.'); return; }
   showLoginError('');
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, usernameToEmail(username), password);
-    authUsersList.push({ username, uid: cred.user.uid });
-    await saveAuthSettings();
-    // onAuthStateChanged fires automatically
-  } catch(e) {
-    showLoginError(e.code === 'auth/email-already-in-use' ? 'Username taken — try another.' : 'Could not create account.');
-  }
+  const hash = await hashPassword(password);
+  authUsersList.push({ username, passwordHash: hash });
+  await saveAuthSettings();
+  currentAuthUser = { username };
+  localStorage.setItem('expensio_session', JSON.stringify(currentAuthUser));
+  _authDone();
 };
 
-window.doLogout = async function() {
-  await signOut(auth);
-  // handleAuthState fires with null → shows login if authEnabled
+// Escape hatch: shown on setup screen so users can never get permanently locked out
+window.cancelAuthSetup = async function() {
+  authEnabled = false;
+  await saveAuthSettings();
+  currentAuthUser = null;
+  _authDone();
+};
+
+window.doLogout = function() {
+  localStorage.removeItem('expensio_session');
+  currentAuthUser = null;
+  updateUserDisplay();
+  if (authEnabled) showLoginScreen();
 };
 
 window.addUser = async function() {
   const username = document.getElementById('newUserUsername').value.trim();
   const password = document.getElementById('newUserPassword').value;
-  if (!username)           { showToast('Enter a username.'); return; }
-  if (password.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+  if (!username)            { showToast('Enter a username.'); return; }
+  if (password.length < 6)  { showToast('Password must be at least 6 characters.'); return; }
   if (authUsersList.find(u => u.username.toLowerCase() === username.toLowerCase())) {
     showToast('Username already exists.'); return;
   }
-  try {
-    const cred = await createUserWithEmailAndPassword(secondaryAuth, usernameToEmail(username), password);
-    await signOut(secondaryAuth);
-    authUsersList.push({ username, uid: cred.user.uid });
-    await saveAuthSettings();
-    document.getElementById('newUserUsername').value = '';
-    document.getElementById('newUserPassword').value = '';
-    renderUsersList();
-    showToast('User added!');
-  } catch(e) {
-    showToast(e.code === 'auth/email-already-in-use' ? 'Username taken.' : 'Error creating user.');
-  }
+  const hash = await hashPassword(password);
+  authUsersList.push({ username, passwordHash: hash });
+  await saveAuthSettings();
+  document.getElementById('newUserUsername').value = '';
+  document.getElementById('newUserPassword').value = '';
+  renderUsersList();
+  showToast('User "' + username + '" added!');
 };
 
-window.removeUser = async function(uid) {
-  if (currentAuthUser && currentAuthUser.uid === uid) { showToast('Cannot remove yourself.'); return; }
-  if (!confirm('Remove this user?')) return;
-  authUsersList = authUsersList.filter(u => u.uid !== uid);
+window.removeUser = async function(username) {
+  if (currentAuthUser && currentAuthUser.username === username) { showToast('Cannot remove yourself.'); return; }
+  if (!confirm('Remove user "' + username + '"?')) return;
+  authUsersList = authUsersList.filter(u => u.username !== username);
   await saveAuthSettings();
   renderUsersList();
   showToast('User removed.');
@@ -1190,6 +1177,7 @@ window.removeUser = async function(uid) {
 window.setAuthEnabled = async function(enabled) {
   authEnabled = enabled;
   document.getElementById('usersSection').style.display = enabled ? '' : 'none';
+  if (!enabled) localStorage.removeItem('expensio_session');
   await saveAuthSettings();
   updateUserDisplay();
   showToast(enabled ? 'Login now required.' : 'Login requirement disabled.');
@@ -1202,10 +1190,10 @@ function renderUsersList() {
     return;
   }
   el.innerHTML = authUsersList.map(u => {
-    const isYou = currentAuthUser && currentAuthUser.uid === u.uid;
+    const isYou = currentAuthUser && currentAuthUser.username === u.username;
     return `<div class="user-item">
       <div class="user-item-name">${u.username}${isYou ? ' <span class="user-item-you">you</span>' : ''}</div>
-      ${isYou ? '' : `<button class="user-item-del" onclick="removeUser('${u.uid}')" title="Remove">✕</button>`}
+      ${isYou ? '' : `<button class="user-item-del" onclick="removeUser('${u.username}')" title="Remove">✕</button>`}
     </div>`;
   }).join('');
 }
