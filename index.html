@@ -298,6 +298,27 @@ textarea { resize: vertical; min-height: 58px; }
 .calc-btn.zero { grid-column: span 2; text-align: left; padding-left: 1.1rem; }
 .calc-use { margin-top: 0.15rem; }
 
+/* ── Income / balance ────────────────────────────────────────── */
+.form-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; gap: 0; align-items: center; }
+.form-tab { flex: 1; padding: 0.65rem 0.5rem; border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
+.form-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.form-tab-voice { margin-left: auto; padding: 0 0.35rem 0 0.5rem; display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--accent); background: none; border: none; cursor: pointer; }
+.form-tab-voice:hover { text-decoration: underline; }
+
+.stat-card.income-card { background: var(--green-soft); border-color: #b0d4be; }
+.stat-card.income-card .stat-value { color: var(--green); }
+[data-theme="dark"] .stat-card.income-card { border-color: #2a4a35; }
+.stat-card.balance-pos { background: var(--green-soft); border-color: #b0d4be; }
+.stat-card.balance-pos .stat-value { color: var(--green); }
+.stat-card.balance-neg { background: var(--red-soft); border-color: #e8c4bb; }
+.stat-card.balance-neg .stat-value { color: var(--accent); }
+[data-theme="dark"] .stat-card.balance-pos { border-color: #2a4a35; }
+[data-theme="dark"] .stat-card.balance-neg { border-color: #5a2a1e; }
+
+.income-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.income-badge { font-size: 0.65rem; background: var(--green-soft); color: var(--green); border-radius: 4px; padding: 1px 5px; font-weight: 600; flex-shrink: 0; }
+.income-amount { font-family: 'DM Serif Display', serif; font-size: 1.05rem; flex-shrink: 0; color: var(--green); }
+
 /* ── Voice input ─────────────────────────────────────────────── */
 .mic-btn { display: flex; align-items: center; gap: 0.35rem; }
 .listening-modal { width: min(260px, 85vw) !important; text-align: center; }
@@ -376,9 +397,19 @@ textarea { resize: vertical; min-height: 58px; }
 
   <div class="summary-grid">
     <div class="stat-card budget-card">
-      <div class="stat-label">This Month</div>
+      <div class="stat-label">Month Spent</div>
       <div class="stat-value" id="monthTotal">—</div>
       <div class="stat-sub" id="monthCount">0 expenses</div>
+    </div>
+    <div class="stat-card income-card">
+      <div class="stat-label">Month Income</div>
+      <div class="stat-value" id="monthIncomeTotal">—</div>
+      <div class="stat-sub" id="monthIncomeCount">0 payments</div>
+    </div>
+    <div class="stat-card" id="balanceCard">
+      <div class="stat-label">Net Balance</div>
+      <div class="stat-value" id="balanceValue">—</div>
+      <div class="stat-sub" id="balanceSub">This month</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">This Week</div>
@@ -418,9 +449,10 @@ textarea { resize: vertical; min-height: 58px; }
 
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title">
-        Add expense
-        <button class="panel-link mic-btn" onclick="startVoiceInput()" title="Add via voice">
+      <div class="form-tabs">
+        <button class="form-tab active" id="tabExpense" onclick="setFormMode('expense')">Add Expense</button>
+        <button class="form-tab" id="tabIncome" onclick="setFormMode('income')">Record Income</button>
+        <button class="form-tab-voice" onclick="startVoiceInput()" title="Add via voice">
           <svg width="11" height="14" viewBox="0 0 13 17" fill="currentColor">
             <rect x="3.5" y="0" width="6" height="9.5" rx="3"/>
             <path d="M1 9A5.5 5.5 0 0 0 12 9" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
@@ -430,45 +462,96 @@ textarea { resize: vertical; min-height: 58px; }
           Voice
         </button>
       </div>
-      <div class="form-group">
-        <label>Item name</label>
-        <input type="text" id="expName" placeholder="e.g. Oat milk latte" />
-      </div>
-      <div class="form-group">
-        <label>Amount</label>
-        <div class="input-with-btn">
-          <input type="number" id="expAmount" placeholder="0" min="0" step="0.01" />
-          <button class="input-action-btn" onclick="openCalcModal('add')" title="Open calculator">
-            <svg width="14" height="14" viewBox="0 0 15 15" fill="currentColor">
-              <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/>
-              <rect x="2.5" y="2.5" width="10" height="2.8" rx="0.8"/>
-              <rect x="2.5" y="7" width="2.5" height="2.2" rx="0.6"/>
-              <rect x="6.25" y="7" width="2.5" height="2.2" rx="0.6"/>
-              <rect x="10" y="7" width="2.5" height="2.2" rx="0.6"/>
-              <rect x="2.5" y="10.3" width="2.5" height="2.2" rx="0.6"/>
-              <rect x="6.25" y="10.3" width="2.5" height="2.2" rx="0.6"/>
-              <rect x="10" y="10.3" width="2.5" height="2.2" rx="0.6"/>
-            </svg>
-          </button>
+
+      <!-- Expense form -->
+      <div id="expenseFormSection">
+        <div class="form-group">
+          <label>Item name</label>
+          <input type="text" id="expName" placeholder="e.g. Oat milk latte" />
         </div>
+        <div class="form-group">
+          <label>Amount</label>
+          <div class="input-with-btn">
+            <input type="number" id="expAmount" placeholder="0" min="0" step="0.01" />
+            <button class="input-action-btn" onclick="openCalcModal('add')" title="Open calculator">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="currentColor">
+                <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                <rect x="2.5" y="2.5" width="10" height="2.8" rx="0.8"/>
+                <rect x="2.5" y="7" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="6.25" y="7" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="10" y="7" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="2.5" y="10.3" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="6.25" y="10.3" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="10" y="10.3" width="2.5" height="2.2" rx="0.6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="expCat"></select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="expDate" />
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <textarea id="expNotes" placeholder="Any additional details…"></textarea>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="expRecurring" />
+          <label for="expRecurring">Recurring expense</label>
+        </div>
+        <button class="btn btn-primary" id="addBtn" onclick="addExpense()">Add expense</button>
       </div>
-      <div class="form-group">
-        <label>Category</label>
-        <select id="expCat"></select>
+
+      <!-- Income form -->
+      <div id="incomeFormSection" style="display:none;">
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="incDesc" placeholder="e.g. Monthly salary" />
+        </div>
+        <div class="form-group">
+          <label>Amount</label>
+          <div class="input-with-btn">
+            <input type="number" id="incAmount" placeholder="0" min="0" step="0.01" />
+            <button class="input-action-btn" onclick="openCalcModal('inc')" title="Open calculator">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="currentColor">
+                <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                <rect x="2.5" y="2.5" width="10" height="2.8" rx="0.8"/>
+                <rect x="2.5" y="7" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="6.25" y="7" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="10" y="7" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="2.5" y="10.3" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="6.25" y="10.3" width="2.5" height="2.2" rx="0.6"/>
+                <rect x="10" y="10.3" width="2.5" height="2.2" rx="0.6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="incCat">
+            <option>Salary</option>
+            <option>Freelance</option>
+            <option>Repayment</option>
+            <option>Gift</option>
+            <option>Bonus</option>
+            <option>Investment</option>
+            <option>Other Income</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="incDate" />
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <textarea id="incNotes" placeholder="Any additional details…"></textarea>
+        </div>
+        <button class="btn btn-primary" id="addIncBtn" onclick="addIncome()" style="background:var(--green);">Record income</button>
       </div>
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="expDate" />
-      </div>
-      <div class="form-group">
-        <label>Notes (optional)</label>
-        <textarea id="expNotes" placeholder="Any additional details…"></textarea>
-      </div>
-      <div class="checkbox-row">
-        <input type="checkbox" id="expRecurring" />
-        <label for="expRecurring">Recurring expense</label>
-      </div>
-      <button class="btn btn-primary" id="addBtn" onclick="addExpense()">Add expense</button>
     </div>
 
     <div class="panel">
@@ -618,6 +701,45 @@ textarea { resize: vertical; min-height: 58px; }
   </div>
 </div>
 
+<!-- Income Edit Modal -->
+<div class="modal-backdrop" id="incomeEditModal">
+  <div class="modal">
+    <div class="modal-title">Edit income</div>
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" id="incEditDesc" />
+    </div>
+    <div class="form-group">
+      <label>Amount</label>
+      <input type="number" id="incEditAmount" min="0" step="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="incEditCat">
+        <option>Salary</option>
+        <option>Freelance</option>
+        <option>Repayment</option>
+        <option>Gift</option>
+        <option>Bonus</option>
+        <option>Investment</option>
+        <option>Other Income</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="incEditDate" />
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="incEditNotes" placeholder="Any additional details…"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="saveIncomeEdit()" style="background:var(--green);">Save changes</button>
+    <button class="btn btn-outline" onclick="closeIncomeEditModal()">Cancel</button>
+    <hr class="modal-divider">
+    <button class="btn btn-danger" onclick="deleteFromIncomeEdit()">Delete income entry</button>
+  </div>
+</div>
+
 <!-- Listening Modal -->
 <div class="modal-backdrop" id="listeningModal">
   <div class="modal listening-modal">
@@ -745,9 +867,12 @@ const CURRENCIES = {
 };
 
 let expenses        = [];
+let income          = [];
 let budget          = 0;
 let currency        = 'SEK';
 let categories      = [...DEFAULT_CATEGORIES];
+let formMode        = 'expense';
+let editingIncomeId = null;
 let currentFilter   = 'day';
 let searchQuery     = '';
 let catFilter       = '';
@@ -828,7 +953,17 @@ function updateSummary() {
   set('today', sum(da), da.length);
   set('year',  sum(yr), yr.length);
 
+  const moInc       = filterIncome('month');
+  const monthIncome = sum(moInc);
+  document.getElementById('monthIncomeTotal').textContent = fmt(monthIncome);
+  document.getElementById('monthIncomeCount').textContent = moInc.length + ' payment' + (moInc.length !== 1 ? 's' : '');
+
   const spent = sum(mo);
+  const balance = monthIncome - spent;
+  document.getElementById('balanceValue').textContent = fmt(Math.abs(balance));
+  document.getElementById('balanceSub').textContent   = balance >= 0 ? 'surplus this month' : 'deficit this month';
+  const bc = document.getElementById('balanceCard');
+  bc.className = 'stat-card ' + (balance >= 0 ? 'balance-pos' : 'balance-neg');
   const fill  = document.getElementById('budgetFill');
   if (budget > 0) {
     const pct = Math.min((spent / budget) * 100, 100);
@@ -916,41 +1051,67 @@ function renderChart() {
 }
 
 // ── History list ───────────────────────────────────────────────
+function filterIncome(f) {
+  const now = new Date();
+  return income.filter(e => {
+    const d = new Date(e.date + 'T12:00:00');
+    if (f === 'day')   return e.date === today();
+    if (f === 'week')  { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
+    if (f === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (f === 'year')  return d.getFullYear() === now.getFullYear();
+    return true;
+  });
+}
+
 function renderList() {
-  let filtered = filterExpenses(currentFilter);
+  let filtExp = filterExpenses(currentFilter);
+  let filtInc = filterIncome(currentFilter);
+
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(e =>
-      e.name.toLowerCase().includes(q) ||
-      (e.notes && e.notes.toLowerCase().includes(q)) ||
-      e.category.toLowerCase().includes(q)
-    );
+    filtExp = filtExp.filter(e => e.name.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
+    filtInc = filtInc.filter(e => e.description.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
   }
-  if (catFilter)     filtered = filtered.filter(e => e.category === catFilter);
-  if (showRecurring) filtered = filtered.filter(e => e.recurring);
+  if (catFilter)     filtExp = filtExp.filter(e => e.category === catFilter);
+  if (showRecurring) filtExp = filtExp.filter(e => e.recurring);
 
-  const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const el     = document.getElementById('expenseList');
+  const expRows = filtExp.map(e => ({ ...e, _t: 'exp' }));
+  const incRows = filtInc.map(e => ({ ...e, _t: 'inc' }));
+  const all     = [...expRows, ...incRows].sort((a, b) => {
+    const diff = new Date(b.date) - new Date(a.date);
+    return diff !== 0 ? diff : (a._t === 'inc' ? -1 : 1);
+  });
 
-  if (!sorted.length) {
-    el.innerHTML = '<div class="empty-state">No expenses found.</div>';
-    return;
-  }
+  const el = document.getElementById('expenseList');
+  if (!all.length) { el.innerHTML = '<div class="empty-state">No entries found.</div>'; return; }
 
-  el.innerHTML = sorted.map(e => {
-    const col     = catColor(e.category);
-    const dStr    = new Date(e.date + 'T12:00:00').toLocaleDateString('en-SE', { weekday: 'short', day: 'numeric', month: 'short' });
-    const badge   = e.recurring ? '<span class="recurring-badge">↺ recurring</span>' : '';
-    const notes   = e.notes ? `<div class="expense-notes">${e.notes}</div>` : '';
-    const safeId  = e.id.replace(/'/g, "\\'");
+  el.innerHTML = all.map(row => {
+    const dStr  = new Date(row.date + 'T12:00:00').toLocaleDateString('en-SE', { weekday:'short', day:'numeric', month:'short' });
+    const safeId = row.id.replace(/'/g, "\\'");
+    if (row._t === 'inc') {
+      const notes = row.notes ? `<div class="expense-notes">${row.notes}</div>` : '';
+      return `<div class="expense-item" onclick="openIncomeEditModal('${safeId}')">
+        <div class="income-dot"></div>
+        <div class="expense-info">
+          <div class="expense-name"><span class="expense-name-text">${row.description}</span><span class="income-badge">+ income</span></div>
+          <div class="expense-meta">${row.category} · ${dStr}</div>
+          ${notes}
+        </div>
+        <div class="income-amount">+${fmt(row.amount)}</div>
+        <button class="expense-del" onclick="event.stopPropagation();deleteIncome('${safeId}')" title="Delete">✕</button>
+      </div>`;
+    }
+    const col   = catColor(row.category);
+    const badge = row.recurring ? '<span class="recurring-badge">↺ recurring</span>' : '';
+    const notes = row.notes ? `<div class="expense-notes">${row.notes}</div>` : '';
     return `<div class="expense-item" onclick="openEditModal('${safeId}')">
       <div class="expense-cat-dot" style="background:${col};"></div>
       <div class="expense-info">
-        <div class="expense-name"><span class="expense-name-text">${e.name}</span>${badge}</div>
-        <div class="expense-meta">${e.category} · ${dStr}</div>
+        <div class="expense-name"><span class="expense-name-text">${row.name}</span>${badge}</div>
+        <div class="expense-meta">${row.category} · ${dStr}</div>
         ${notes}
       </div>
-      <div class="expense-amount">${fmt(e.amount)}</div>
+      <div class="expense-amount">${fmt(row.amount)}</div>
       <button class="expense-del" onclick="event.stopPropagation();deleteExpense('${safeId}')" title="Delete">✕</button>
     </div>`;
   }).join('');
@@ -1010,6 +1171,15 @@ function startListener() {
     console.error(err);
     setSyncStatus('error', 'Sync error');
   });
+}
+
+// ── Income Firestore listener ──────────────────────────────────
+function startIncomeListener() {
+  const q = query(collection(db, 'income'), orderBy('date', 'desc'));
+  onSnapshot(q, snap => {
+    income = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    refresh();
+  }, err => console.error('Income listener error', err));
 }
 
 // ── Add expense ────────────────────────────────────────────────
@@ -1282,6 +1452,107 @@ function showToast(msg) {
 
 function setDefaultDate() { document.getElementById('expDate').value = today(); }
 
+// ── Form mode toggle ───────────────────────────────────────────
+window.setFormMode = function(mode) {
+  formMode = mode;
+  document.getElementById('expenseFormSection').style.display = mode === 'expense' ? '' : 'none';
+  document.getElementById('incomeFormSection').style.display  = mode === 'income'  ? '' : 'none';
+  document.getElementById('tabExpense').classList.toggle('active', mode === 'expense');
+  document.getElementById('tabIncome').classList.toggle('active',  mode === 'income');
+};
+
+// ── Add income ─────────────────────────────────────────────────
+window.addIncome = async function() {
+  const description = document.getElementById('incDesc').value.trim();
+  const amount      = parseFloat(document.getElementById('incAmount').value);
+  const category    = document.getElementById('incCat').value;
+  const date        = document.getElementById('incDate').value;
+  const notes       = document.getElementById('incNotes').value.trim();
+
+  if (!description)       { showToast('Please enter a description.'); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid amount.'); return; }
+  if (!date)              { showToast('Please pick a date.'); return; }
+
+  const btn = document.getElementById('addIncBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  setSyncStatus('syncing', 'Saving…');
+
+  try {
+    await addDoc(collection(db, 'income'), { description, amount, category, date, notes, createdAt: Date.now() });
+    document.getElementById('incDesc').value  = '';
+    document.getElementById('incAmount').value = '';
+    document.getElementById('incNotes').value  = '';
+    document.getElementById('incDate').value   = today();
+    showToast('Income recorded!');
+  } catch(e) {
+    showToast('Error saving. Check connection.');
+    setSyncStatus('error', 'Save failed');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Record income';
+  }
+};
+
+// ── Delete income ──────────────────────────────────────────────
+window.deleteIncome = async function(id) {
+  setSyncStatus('syncing', 'Deleting…');
+  try {
+    await deleteDoc(doc(db, 'income', id));
+    showToast('Income entry removed.');
+  } catch(e) {
+    showToast('Error deleting.');
+    setSyncStatus('error', 'Error');
+  }
+};
+
+// ── Income edit modal ──────────────────────────────────────────
+window.openIncomeEditModal = function(id) {
+  const entry = income.find(e => e.id === id);
+  if (!entry) return;
+  editingIncomeId = id;
+  document.getElementById('incEditDesc').value   = entry.description;
+  document.getElementById('incEditAmount').value = entry.amount;
+  document.getElementById('incEditCat').value    = entry.category;
+  document.getElementById('incEditDate').value   = entry.date;
+  document.getElementById('incEditNotes').value  = entry.notes || '';
+  document.getElementById('incomeEditModal').classList.add('open');
+};
+
+window.closeIncomeEditModal = function() {
+  document.getElementById('incomeEditModal').classList.remove('open');
+  editingIncomeId = null;
+};
+
+window.saveIncomeEdit = async function() {
+  if (!editingIncomeId) return;
+  const description = document.getElementById('incEditDesc').value.trim();
+  const amount      = parseFloat(document.getElementById('incEditAmount').value);
+  const category    = document.getElementById('incEditCat').value;
+  const date        = document.getElementById('incEditDate').value;
+  const notes       = document.getElementById('incEditNotes').value.trim();
+
+  if (!description)           { showToast('Please enter a description.'); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid amount.'); return; }
+  if (!date)                  { showToast('Please pick a date.'); return; }
+
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    await updateDoc(doc(db, 'income', editingIncomeId), { description, amount, category, date, notes });
+    closeIncomeEditModal();
+    showToast('Income updated!');
+  } catch(e) {
+    showToast('Error updating.');
+    setSyncStatus('error', 'Error');
+  }
+};
+
+window.deleteFromIncomeEdit = async function() {
+  if (!editingIncomeId) return;
+  if (!confirm('Delete this income entry?')) return;
+  const id = editingIncomeId;
+  closeIncomeEditModal();
+  await window.deleteIncome(id);
+};
+
 // ── Calculator ─────────────────────────────────────────────────
 let calcState  = { display: '0', prev: null, op: null, waiting: false, fresh: false };
 let calcTarget = null;
@@ -1381,8 +1652,8 @@ window.calcPercent = function() {
 window.calcUse = function() {
   const val = parseFloat(calcState.display);
   if (!isFinite(val) || val < 0) { showToast('Invalid value.'); return; }
-  if (calcTarget === 'add' || calcTarget === 'edit') {
-    const id = calcTarget === 'add' ? 'expAmount' : 'editAmount';
+  if (calcTarget === 'add' || calcTarget === 'edit' || calcTarget === 'inc') {
+    const id = calcTarget === 'add' ? 'expAmount' : calcTarget === 'inc' ? 'incAmount' : 'editAmount';
     document.getElementById(id).value = parseFloat(val.toFixed(2));
     closeCalcModal();
     showToast('Amount filled!');
@@ -1567,7 +1838,7 @@ function guessCategory(text) {
 }
 
 // ── Close modals on backdrop click ─────────────────────────────
-['budgetModal','editModal','catsModal','settingsModal','listeningModal','voiceModal','calcModal'].forEach(id => {
+['budgetModal','editModal','incomeEditModal','catsModal','settingsModal','listeningModal','voiceModal','calcModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) {
       this.classList.remove('open');
@@ -1585,6 +1856,8 @@ syncDarkBtn();
 setSyncStatus('syncing', 'Connecting…');
 await loadSettings();
 startListener();
+startIncomeListener();
+document.getElementById('incDate').value = today();
 </script>
 </body>
 </html>
