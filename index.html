@@ -542,15 +542,7 @@ textarea { resize: vertical; min-height: 58px; }
         </div>
         <div class="form-group">
           <label>Category</label>
-          <select id="incCat">
-            <option>Salary</option>
-            <option>Freelance</option>
-            <option>Repayment</option>
-            <option>Gift</option>
-            <option>Bonus</option>
-            <option>Investment</option>
-            <option>Other Income</option>
-          </select>
+          <select id="incCat"></select>
         </div>
         <div class="form-group">
           <label>Date</label>
@@ -685,11 +677,27 @@ textarea { resize: vertical; min-height: 58px; }
 <div class="modal-backdrop" id="catsModal">
   <div class="modal">
     <div class="modal-title">Manage categories</div>
-    <div class="cat-manage-list" id="catManageList"></div>
-    <div class="cat-add-row">
-      <input type="color" id="newCatColor" value="#c84b2f" />
-      <input type="text" id="newCatName" placeholder="New category name…" />
-      <button class="btn btn-primary btn-sm" onclick="addCategory()">Add</button>
+    <div class="tabs" style="margin-bottom:1rem;">
+      <button class="tab active" id="catTabExp" onclick="switchCatTab('exp')">Expenses</button>
+      <button class="tab" id="catTabInc" onclick="switchCatTab('inc')">Income</button>
+    </div>
+    <!-- Expense categories -->
+    <div id="catPanelExp">
+      <div class="cat-manage-list" id="catManageList"></div>
+      <div class="cat-add-row">
+        <input type="color" id="newCatColor" value="#c84b2f" />
+        <input type="text" id="newCatName" placeholder="New category name…" />
+        <button class="btn btn-primary btn-sm" onclick="addCategory()">Add</button>
+      </div>
+    </div>
+    <!-- Income categories -->
+    <div id="catPanelInc" style="display:none;">
+      <div class="cat-manage-list" id="incCatManageList"></div>
+      <div class="cat-add-row">
+        <input type="color" id="newIncCatColor" value="#2d6a4f" />
+        <input type="text" id="newIncCatName" placeholder="New income category…" />
+        <button class="btn btn-primary btn-sm" onclick="addIncomeCategory()">Add</button>
+      </div>
     </div>
     <hr class="modal-divider">
     <button class="btn btn-outline" onclick="closeCatsModal()">Done</button>
@@ -738,15 +746,7 @@ textarea { resize: vertical; min-height: 58px; }
     </div>
     <div class="form-group">
       <label>Category</label>
-      <select id="incEditCat">
-        <option>Salary</option>
-        <option>Freelance</option>
-        <option>Repayment</option>
-        <option>Gift</option>
-        <option>Bonus</option>
-        <option>Investment</option>
-        <option>Other Income</option>
-      </select>
+      <select id="incEditCat"></select>
     </div>
     <div class="form-group">
       <label>Date</label>
@@ -883,6 +883,16 @@ const DEFAULT_CATEGORIES = [
   { name: 'Other',           color: '#8a877e' },
 ];
 
+const DEFAULT_INCOME_CATEGORIES = [
+  { name: 'Salary',      color: '#2d6a4f' },
+  { name: 'Freelance',   color: '#185fa5' },
+  { name: 'Repayment',   color: '#b5650d' },
+  { name: 'Gift',        color: '#c25c8b' },
+  { name: 'Bonus',       color: '#6b3fa0' },
+  { name: 'Investment',  color: '#4a5568' },
+  { name: 'Other Income', color: '#8a877e' },
+];
+
 const CURRENCIES = {
   SEK: 'kr', USD: '$', EUR: '€', GBP: '£',
   NOK: 'kr', DKK: 'kr', CHF: 'CHF',
@@ -893,7 +903,8 @@ let expenses        = [];
 let income          = [];
 let budget          = 0;
 let currency        = 'SEK';
-let categories      = [...DEFAULT_CATEGORIES];
+let categories       = [...DEFAULT_CATEGORIES];
+let incomeCategories = [...DEFAULT_INCOME_CATEGORIES];
 let formMode        = 'expense';
 let editingIncomeId = null;
 let currentFilter   = 'day';
@@ -1167,15 +1178,20 @@ function populateCatSelects() {
     categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
   document.getElementById('catFilterSelect').innerHTML = filterOpts;
   if (catFilter) document.getElementById('catFilterSelect').value = catFilter;
+
+  const incOpts = incomeCategories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  document.getElementById('incCat').innerHTML     = incOpts;
+  document.getElementById('incEditCat').innerHTML = incOpts;
 }
 
 // ── Settings load ──────────────────────────────────────────────
 async function loadSettings() {
   try {
-    const [budgetSnap, prefSnap, catsSnap] = await Promise.all([
+    const [budgetSnap, prefSnap, catsSnap, incCatsSnap] = await Promise.all([
       getDoc(doc(db, 'settings', 'budget')),
       getDoc(doc(db, 'settings', 'preferences')),
       getDoc(doc(db, 'settings', 'categories')),
+      getDoc(doc(db, 'settings', 'incomeCategories')),
     ]);
     if (budgetSnap.exists()) budget = budgetSnap.data().amount || 0;
     if (prefSnap.exists() && prefSnap.data().currency) {
@@ -1184,6 +1200,9 @@ async function loadSettings() {
     }
     if (catsSnap.exists() && catsSnap.data().list?.length) {
       categories = catsSnap.data().list;
+    }
+    if (incCatsSnap.exists() && incCatsSnap.data().list?.length) {
+      incomeCategories = incCatsSnap.data().list;
     }
   } catch(e) { console.warn('Settings load error', e); }
   populateCatSelects();
@@ -1364,12 +1383,19 @@ window.saveBudget = async function() {
 let editingCatIndex = null;
 
 window.openCatsModal = () => {
-  editingCatIndex = null;
+  editingCatIndex    = null;
+  editingIncCatIndex = null;
+  activeCatTab       = 'exp';
+  document.getElementById('catTabExp').classList.add('active');
+  document.getElementById('catTabInc').classList.remove('active');
+  document.getElementById('catPanelExp').style.display = '';
+  document.getElementById('catPanelInc').style.display = 'none';
   renderCatManageList();
   document.getElementById('catsModal').classList.add('open');
 };
 window.closeCatsModal = () => {
-  editingCatIndex = null;
+  editingCatIndex    = null;
+  editingIncCatIndex = null;
   document.getElementById('catsModal').classList.remove('open');
 };
 
@@ -1462,6 +1488,102 @@ window.removeCategory = async function(i) {
 
 async function saveCategories() {
   try { await setDoc(doc(db, 'settings', 'categories'), { list: categories }); }
+  catch(e) { showToast('Error saving categories.'); }
+}
+
+// ── Income category management ─────────────────────────────────
+let editingIncCatIndex = null;
+let activeCatTab = 'exp';
+
+window.switchCatTab = function(tab) {
+  activeCatTab = tab;
+  editingCatIndex    = null;
+  editingIncCatIndex = null;
+  document.getElementById('catTabExp').classList.toggle('active', tab === 'exp');
+  document.getElementById('catTabInc').classList.toggle('active', tab === 'inc');
+  document.getElementById('catPanelExp').style.display = tab === 'exp' ? '' : 'none';
+  document.getElementById('catPanelInc').style.display = tab === 'inc' ? '' : 'none';
+  if (tab === 'inc') renderIncCatManageList();
+  else renderCatManageList();
+};
+
+function renderIncCatManageList() {
+  const el = document.getElementById('incCatManageList');
+  if (!incomeCategories.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">No categories.</div>'; return; }
+  el.innerHTML = incomeCategories.map((c, i) => {
+    if (i === editingIncCatIndex) {
+      return `<div class="cat-manage-row editing">
+        <input type="color" id="editIncCatColor_${i}" value="${c.color}" />
+        <input type="text"  id="editIncCatName_${i}"  value="${c.name}" onkeydown="if(event.key==='Enter')saveEditIncCat(${i});else if(event.key==='Escape')cancelEditIncCat();" />
+        <button class="cat-save-btn" onclick="saveEditIncCat(${i})" title="Save">✓</button>
+        <button class="cat-manage-del" onclick="cancelEditIncCat()" title="Cancel">✕</button>
+      </div>`;
+    }
+    return `<div class="cat-manage-row">
+      <div style="width:14px;height:14px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+      <div class="cat-manage-name">${c.name}</div>
+      <button class="cat-manage-edit" onclick="startEditIncCat(${i})" title="Edit">✎</button>
+      <button class="cat-manage-del"  onclick="removeIncomeCategory(${i})" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+  if (editingIncCatIndex !== null) {
+    const inp = document.getElementById(`editIncCatName_${editingIncCatIndex}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+window.startEditIncCat = function(i) { editingIncCatIndex = i; renderIncCatManageList(); };
+window.cancelEditIncCat = function() { editingIncCatIndex = null; renderIncCatManageList(); };
+
+window.saveEditIncCat = async function(i) {
+  const newName  = document.getElementById(`editIncCatName_${i}`).value.trim();
+  const newColor = document.getElementById(`editIncCatColor_${i}`).value;
+  if (!newName) { showToast('Name cannot be empty.'); return; }
+  if (incomeCategories.find((c, idx) => idx !== i && c.name.toLowerCase() === newName.toLowerCase())) {
+    showToast('Category name already exists.'); return;
+  }
+  const oldName = incomeCategories[i].name;
+  incomeCategories[i] = { name: newName, color: newColor };
+  if (oldName !== newName) {
+    const toUpdate = income.filter(e => e.category === oldName);
+    if (toUpdate.length) {
+      await Promise.all(toUpdate.map(e => updateDoc(doc(db, 'income', e.id), { category: newName })));
+    }
+  }
+  await saveIncomeCategories();
+  editingIncCatIndex = null;
+  renderIncCatManageList();
+  populateCatSelects();
+  showToast('Category updated!');
+};
+
+window.addIncomeCategory = async function() {
+  const name  = document.getElementById('newIncCatName').value.trim();
+  const color = document.getElementById('newIncCatColor').value;
+  if (!name) { showToast('Enter a category name.'); return; }
+  if (incomeCategories.find(c => c.name.toLowerCase() === name.toLowerCase())) { showToast('Category already exists.'); return; }
+  incomeCategories.push({ name, color });
+  document.getElementById('newIncCatName').value = '';
+  await saveIncomeCategories();
+  renderIncCatManageList();
+  populateCatSelects();
+  showToast('Category added!');
+};
+
+window.removeIncomeCategory = async function(i) {
+  if (incomeCategories.length <= 1) { showToast('Keep at least one category.'); return; }
+  const cat   = incomeCategories[i];
+  const inUse = income.some(e => e.category === cat.name);
+  if (inUse && !confirm(`"${cat.name}" is used by existing income entries. Remove anyway?`)) return;
+  incomeCategories.splice(i, 1);
+  await saveIncomeCategories();
+  renderIncCatManageList();
+  populateCatSelects();
+  showToast('Category removed.');
+};
+
+async function saveIncomeCategories() {
+  try { await setDoc(doc(db, 'settings', 'incomeCategories'), { list: incomeCategories }); }
   catch(e) { showToast('Error saving categories.'); }
 }
 
