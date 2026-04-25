@@ -1984,53 +1984,95 @@ function renderList() {
   const incSum = filtInc.reduce((a, e) => a + e.amount, 0);
   const showExpTotal = typeFilter !== 'inc';
   const showIncTotal = typeFilter !== 'exp';
+  const isCustom = currentFilter === 'custom' && customRangeFrom && customRangeTo;
+  const useProrated = showExpTotal && showIncTotal &&
+    (currentFilter === 'day' || currentFilter === 'week') && !isCustom;
   const cards = [];
-  if (showExpTotal && filtExp.length > 0) cards.push(`<div class="ht-card ht-exp-card">
-    <div class="ht-card-label">Expenses</div>
-    <div class="ht-card-value col-exp">${fmtNum(expSum)}</div>
-    <div class="ht-card-sub">${filtExp.length} entr${filtExp.length !== 1 ? 'ies' : 'y'}</div>
-  </div>`);
-  if (showIncTotal && filtInc.length > 0) cards.push(`<div class="ht-card ht-inc-card">
-    <div class="ht-card-label">Income</div>
-    <div class="ht-card-value col-inc">+${fmtNum(incSum)}</div>
-    <div class="ht-card-sub">${filtInc.length} payment${filtInc.length !== 1 ? 's' : ''}</div>
-  </div>`);
-  if (showExpTotal && showIncTotal) {
-    const isCustom = currentFilter === 'custom' && customRangeFrom && customRangeTo;
-    const useProrated = (currentFilter === 'day' || currentFilter === 'week') && !isCustom;
-    let netIncome    = incSum;
-    let netLabel     = 'Net';
-    let netSubText   = null;
-    let canShowNet   = filtExp.length > 0 || filtInc.length > 0;
 
-    if (useProrated) {
-      const monthIncSum = sum(filterIncome('month'));
-      if (monthIncSum > 0) {
-        const { cycleStart, cycleEnd } = getMonthRange();
-        const totalDays  = Math.round((cycleEnd - cycleStart) / 864e5) + 1;
-        const periodDays = currentFilter === 'week' ? 7 : 1;
-        netIncome  = (monthIncSum / totalDays) * periodDays;
-        netLabel   = 'Est. Net';
-        netSubText = 'based on monthly avg';
-        canShowNet = filtExp.length > 0;
-      } else {
-        canShowNet = false;
-      }
+  if (useProrated) {
+    const monthIncSum = sum(filterIncome('month'));
+    if (monthIncSum > 0) {
+      const { cycleStart, cycleEnd } = getMonthRange();
+      const totalDays   = Math.round((cycleEnd - cycleStart) / 864e5) + 1;
+      const dailyRate   = monthIncSum / totalDays;
+      const periodDays  = currentFilter === 'week' ? 7 : 1;
+      const periodInc   = dailyRate * periodDays;
+
+      // Running balance: expected income to date minus all expenses since cycle start
+      const nowD = new Date(); nowD.setHours(12, 0, 0, 0);
+      const daysElapsed   = Math.max(1, Math.round((nowD - cycleStart) / 864e5) + 1);
+      const expectedToDate = dailyRate * daysElapsed;
+      const cycleExpenses  = sum(filterExpenses('month'));
+      const runningBal     = expectedToDate - cycleExpenses;
+
+      const periodNet  = periodInc - expSum;
+      const netLabel   = currentFilter === 'week' ? "Week's Net" : "Today's Net";
+      const cycleStartStr = cycleStart.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+
+      // Expenses
+      if (filtExp.length > 0) cards.push(`<div class="ht-card ht-exp-card">
+        <div class="ht-card-label">Expenses</div>
+        <div class="ht-card-value col-exp">${fmtNum(expSum)}</div>
+        <div class="ht-card-sub">${filtExp.length} entr${filtExp.length !== 1 ? 'ies' : 'y'}</div>
+      </div>`);
+
+      // Est. Income
+      cards.push(`<div class="ht-card ht-inc-card">
+        <div class="ht-card-label">Est. Income</div>
+        <div class="ht-card-value col-inc">+${fmtNum(periodInc)}</div>
+        <div class="ht-card-sub">monthly avg ÷ ${totalDays} days</div>
+      </div>`);
+
+      // Period net (today or week)
+      const netCls = periodNet >= 0 ? 'ht-net-pos' : 'ht-net-neg';
+      const netValCls = periodNet >= 0 ? 'col-pos' : 'col-neg';
+      cards.push(`<div class="ht-card ${netCls}">
+        <div class="ht-card-label">${netLabel}</div>
+        <div class="ht-card-value ${netValCls}">${periodNet >= 0 ? '+' : ''}${fmtNum(periodNet)}</div>
+        <div class="ht-card-sub">${periodNet >= 0 ? 'surplus' : 'deficit'}</div>
+      </div>`);
+
+      // Running balance (cycle carry-forward)
+      const runCls = runningBal >= 0 ? 'ht-net-pos' : 'ht-net-neg';
+      const runValCls = runningBal >= 0 ? 'col-pos' : 'col-neg';
+      cards.push(`<div class="ht-card ${runCls}">
+        <div class="ht-card-label">Running Balance</div>
+        <div class="ht-card-value ${runValCls}">${runningBal >= 0 ? '+' : ''}${fmtNum(runningBal)}</div>
+        <div class="ht-card-sub">${runningBal >= 0 ? 'ahead of pace' : 'behind pace'} · since ${cycleStartStr}</div>
+      </div>`);
+    } else {
+      // No monthly income recorded — just show expenses
+      if (filtExp.length > 0) cards.push(`<div class="ht-card ht-exp-card">
+        <div class="ht-card-label">Expenses</div>
+        <div class="ht-card-value col-exp">${fmtNum(expSum)}</div>
+        <div class="ht-card-sub">${filtExp.length} entr${filtExp.length !== 1 ? 'ies' : 'y'}</div>
+      </div>`);
     }
-
-    if (canShowNet) {
-      const net    = netIncome - expSum;
+  } else {
+    // Non-prorated: month / year / custom / all — use actual recorded figures
+    if (showExpTotal && filtExp.length > 0) cards.push(`<div class="ht-card ht-exp-card">
+      <div class="ht-card-label">Expenses</div>
+      <div class="ht-card-value col-exp">${fmtNum(expSum)}</div>
+      <div class="ht-card-sub">${filtExp.length} entr${filtExp.length !== 1 ? 'ies' : 'y'}</div>
+    </div>`);
+    if (showIncTotal && filtInc.length > 0) cards.push(`<div class="ht-card ht-inc-card">
+      <div class="ht-card-label">Income</div>
+      <div class="ht-card-value col-inc">+${fmtNum(incSum)}</div>
+      <div class="ht-card-sub">${filtInc.length} payment${filtInc.length !== 1 ? 's' : ''}</div>
+    </div>`);
+    if (showExpTotal && showIncTotal && (filtExp.length > 0 || filtInc.length > 0)) {
+      const net    = incSum - expSum;
       const cls    = net >= 0 ? 'ht-net-pos' : 'ht-net-neg';
       const valCls = net >= 0 ? 'col-pos' : 'col-neg';
       cards.push(`<div class="ht-card ${cls}">
-        <div class="ht-card-label">${netLabel}</div>
+        <div class="ht-card-label">Net</div>
         <div class="ht-card-value ${valCls}">${net >= 0 ? '+' : ''}${fmtNum(net)}</div>
-        <div class="ht-card-sub">${netSubText || (net >= 0 ? 'surplus' : 'deficit')}</div>
+        <div class="ht-card-sub">${net >= 0 ? 'surplus' : 'deficit'}</div>
       </div>`);
     }
   }
   totalsEl.innerHTML = cards.join('');
-  totalsEl.style.display = all.length ? '' : 'none';
+  totalsEl.style.display = cards.length ? '' : 'none';
   // ─────────────────────────────────────────────────────────────
 
   const el = document.getElementById('expenseList');
