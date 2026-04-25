@@ -408,9 +408,10 @@ textarea { resize: vertical; min-height: 58px; }
 .form-tab-voice { margin-left: auto; padding: 0 0.35rem 0 0.5rem; display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--accent); background: none; border: none; cursor: pointer; }
 .form-tab-voice:hover { text-decoration: underline; }
 
-.stat-card.income-card { background: var(--green-soft); border-color: #b0d4be; }
-.stat-card.income-card .stat-value { color: var(--green); }
+.stat-card.income-card { background: var(--green-soft); border-color: #b0d4be; cursor: pointer; }
+.stat-card.income-card .stat-value { color: var(--green); transition: filter 0.2s; }
 [data-theme="dark"] .stat-card.income-card { border-color: #2a4a35; }
+.stat-value-blurred { filter: blur(7px); user-select: none; }
 .stat-card.balance-pos { background: var(--green-soft); border-color: #b0d4be; }
 .stat-card.balance-pos .stat-value { color: var(--green); }
 .stat-card.balance-neg { background: var(--red-soft); border-color: #e8c4bb; }
@@ -1487,6 +1488,7 @@ let loans            = [];
 let loanRepayments   = [];
 let expandedLoanId   = null;
 let _loanSectionOpen = false;
+let _incomeVisible   = false;
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -1607,9 +1609,9 @@ function updateSummary() {
         <div class="stat-value">${fmt(spent)}</div>
         <div class="stat-sub">${exp.length} expense${exp.length !== 1 ? 's' : ''}</div>
       </div>
-      <div class="stat-card income-card">
+      <div class="stat-card income-card" onclick="toggleIncomeVisibility()">
         <div class="stat-label">${shortLabel ? shortLabel + ' Income' : lbl.income}</div>
-        <div class="stat-value">${fmt(income)}</div>
+        <div class="stat-value${_incomeVisible ? '' : ' stat-value-blurred'}">${fmt(income)}</div>
         <div class="stat-sub">${inc.length} payment${inc.length !== 1 ? 's' : ''}</div>
       </div>
       <div class="stat-card ${net >= 0 ? 'balance-pos' : 'balance-neg'}">
@@ -2289,6 +2291,13 @@ window.deleteLoanRepayment = async function(id) {
 window.toggleLoan = function(id) {
   expandedLoanId = expandedLoanId === id ? null : id;
   renderLoanSection();
+};
+
+window.toggleIncomeVisibility = function() {
+  _incomeVisible = !_incomeVisible;
+  document.querySelectorAll('#summaryGrid .income-card .stat-value').forEach(el => {
+    el.classList.toggle('stat-value-blurred', !_incomeVisible);
+  });
 };
 
 window.toggleLoanSection = function() {
