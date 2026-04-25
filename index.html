@@ -228,16 +228,22 @@ textarea { resize: vertical; min-height: 58px; }
 .clear-link { font-size: 0.78rem; color: var(--accent); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; white-space: nowrap; padding: 0; margin-left: auto; }
 .clear-link:hover { text-decoration: underline; }
 
-.history-totals { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; padding: 0.6rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; font-size: 0.83rem; }
-.ht-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-right: 0.2rem; }
-.ht-exp { color: var(--accent); }
-.ht-exp strong { font-weight: 600; }
-.ht-inc { color: var(--green); }
-.ht-inc strong { font-weight: 600; }
-.ht-net { font-weight: 600; color: var(--ink); }
-.ht-net.pos { color: var(--green); }
-.ht-net.neg { color: var(--accent); }
-.ht-sep { color: var(--border); font-size: 1rem; padding: 0 0.15rem; }
+.history-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.55rem; margin-bottom: 0.75rem; }
+.ht-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.85rem; border-left: 3px solid var(--border); }
+.ht-card.ht-exp-card  { border-left-color: var(--accent); }
+.ht-card.ht-inc-card  { border-left-color: var(--green); }
+.ht-card.ht-net-pos   { border-left-color: var(--green); }
+.ht-card.ht-net-neg   { border-left-color: var(--accent); }
+.ht-card.ht-loan-card { border-left-color: var(--purple); }
+.ht-card.ht-repaid-card { border-left-color: var(--green); }
+.ht-card-label { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem; }
+.ht-card-value { font-family: 'DM Serif Display', serif; font-size: 1.22rem; line-height: 1.1; }
+.ht-card-value.col-exp  { color: var(--accent); }
+.ht-card-value.col-inc  { color: var(--green); }
+.ht-card-value.col-pos  { color: var(--green); }
+.ht-card-value.col-neg  { color: var(--accent); }
+.ht-card-value.col-loan { color: var(--purple); }
+.ht-card-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.18rem; }
 
 .expense-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .expense-item {
@@ -446,8 +452,6 @@ textarea { resize: vertical; min-height: 58px; }
 .stat-card.loan-card .stat-value { color: var(--purple); }
 [data-theme="dark"] .stat-card.loan-card { border-color: #4a2a6a; }
 
-.ht-loan { color: var(--purple); }
-.ht-loan strong { font-weight: 600; }
 
 /* ── Voice input ─────────────────────────────────────────────── */
 .mic-btn { display: flex; align-items: center; gap: 0.35rem; }
@@ -1508,6 +1512,11 @@ function fmt(n) {
   return (n < 0 ? '-' : '') + sym + '\u00a0' + abs;
 }
 
+function fmtNum(n) {
+  const abs = Math.round(Math.abs(n)).toLocaleString();
+  return (n < 0 ? '-' : '') + abs;
+}
+
 function fmtCompact(n) {
   const sym = CURRENCIES[currency] || 'kr';
   if (n >= 1000000) return sym + (n / 1000000).toFixed(1) + 'M';
@@ -1788,15 +1797,28 @@ function renderList() {
   if (typeFilter === 'loan') {
     const loanEvts = filterLoanEvents(currentFilter);
     const totalsEl = document.getElementById('historyTotals');
-    const borrowed  = loanEvts.filter(e => e._t === 'loan').reduce((a, e) => a + e.amount, 0);
-    const repaidAmt = loanEvts.filter(e => e._t === 'repay').reduce((a, e) => a + e.amount, 0);
-    const lnCnt = loanEvts.filter(e => e._t === 'loan').length;
-    const rpCnt = loanEvts.filter(e => e._t === 'repay').length;
-    const parts = [`<span class="ht-label">Selected:</span>`];
-    if (lnCnt > 0)  parts.push(`<span class="ht-loan">${lnCnt} loan${lnCnt !== 1 ? 's' : ''} &nbsp;<strong>+${fmt(borrowed)}</strong></span>`);
-    if (lnCnt > 0 && rpCnt > 0) parts.push(`<span class="ht-sep">|</span>`);
-    if (rpCnt > 0) parts.push(`<span class="ht-inc">${rpCnt} repayment${rpCnt !== 1 ? 's' : ''} &nbsp;<strong>-${fmt(repaidAmt)}</strong></span>`);
-    totalsEl.innerHTML = parts.join('');
+    const lnEvts   = loanEvts.filter(e => e._t === 'loan');
+    const rpEvts   = loanEvts.filter(e => e._t === 'repay');
+    const borrowed  = lnEvts.reduce((a, e) => a + e.amount, 0);
+    const repaidAmt = rpEvts.reduce((a, e) => a + e.amount, 0);
+    const outstanding = Math.max(0, borrowed - repaidAmt);
+    const loanCards = [];
+    if (lnEvts.length > 0) loanCards.push(`<div class="ht-card ht-loan-card">
+      <div class="ht-card-label">Borrowed</div>
+      <div class="ht-card-value col-loan">+${fmtNum(borrowed)}</div>
+      <div class="ht-card-sub">${lnEvts.length} loan${lnEvts.length !== 1 ? 's' : ''}</div>
+    </div>`);
+    if (rpEvts.length > 0) loanCards.push(`<div class="ht-card ht-repaid-card">
+      <div class="ht-card-label">Repaid</div>
+      <div class="ht-card-value col-inc">-${fmtNum(repaidAmt)}</div>
+      <div class="ht-card-sub">${rpEvts.length} repayment${rpEvts.length !== 1 ? 's' : ''}</div>
+    </div>`);
+    if (lnEvts.length > 0 || rpEvts.length > 0) loanCards.push(`<div class="ht-card ${outstanding > 0 ? 'ht-loan-card' : 'ht-net-pos'}">
+      <div class="ht-card-label">Outstanding</div>
+      <div class="ht-card-value ${outstanding > 0 ? 'col-loan' : 'col-pos'}">${fmtNum(outstanding)}</div>
+      <div class="ht-card-sub">${outstanding <= 0 ? 'fully repaid' : 'remaining'}</div>
+    </div>`);
+    totalsEl.innerHTML = loanCards.join('');
     totalsEl.style.display = loanEvts.length ? '' : 'none';
 
     const el = document.getElementById('expenseList');
@@ -1840,22 +1862,34 @@ function renderList() {
     return diff !== 0 ? diff : (a._t === 'inc' ? -1 : 1);
   });
 
-  // ── History totals bar ────────────────────────────────────────
+  // ── History totals mini-cards ─────────────────────────────────
   const totalsEl = document.getElementById('historyTotals');
   const expSum = filtExp.reduce((a, e) => a + e.amount, 0);
   const incSum = filtInc.reduce((a, e) => a + e.amount, 0);
   const showExpTotal = typeFilter !== 'inc';
   const showIncTotal = typeFilter !== 'exp';
-  const parts = [];
-  parts.push(`<span class="ht-label">Selected:</span>`);
-  if (showExpTotal) parts.push(`<span class="ht-exp">${filtExp.length} expense${filtExp.length !== 1 ? 's' : ''} &nbsp;<strong>${fmt(expSum)}</strong></span>`);
-  if (showExpTotal && showIncTotal) parts.push(`<span class="ht-sep">|</span>`);
-  if (showIncTotal) parts.push(`<span class="ht-inc">${filtInc.length} payment${filtInc.length !== 1 ? 's' : ''} &nbsp;<strong>+${fmt(incSum)}</strong></span>`);
+  const cards = [];
+  if (showExpTotal && filtExp.length > 0) cards.push(`<div class="ht-card ht-exp-card">
+    <div class="ht-card-label">Expenses</div>
+    <div class="ht-card-value col-exp">${fmtNum(expSum)}</div>
+    <div class="ht-card-sub">${filtExp.length} entr${filtExp.length !== 1 ? 'ies' : 'y'}</div>
+  </div>`);
+  if (showIncTotal && filtInc.length > 0) cards.push(`<div class="ht-card ht-inc-card">
+    <div class="ht-card-label">Income</div>
+    <div class="ht-card-value col-inc">+${fmtNum(incSum)}</div>
+    <div class="ht-card-sub">${filtInc.length} payment${filtInc.length !== 1 ? 's' : ''}</div>
+  </div>`);
   if (showExpTotal && showIncTotal && (filtExp.length > 0 || filtInc.length > 0)) {
     const net = incSum - expSum;
-    parts.push(`<span class="ht-sep">|</span><span class="ht-net ${net >= 0 ? 'pos' : 'neg'}">Net ${net >= 0 ? '+' : ''}${fmt(net)}</span>`);
+    const cls = net >= 0 ? 'ht-net-pos' : 'ht-net-neg';
+    const valCls = net >= 0 ? 'col-pos' : 'col-neg';
+    cards.push(`<div class="ht-card ${cls}">
+      <div class="ht-card-label">Net</div>
+      <div class="ht-card-value ${valCls}">${net >= 0 ? '+' : ''}${fmtNum(net)}</div>
+      <div class="ht-card-sub">${net >= 0 ? 'surplus' : 'deficit'}</div>
+    </div>`);
   }
-  totalsEl.innerHTML = parts.join('');
+  totalsEl.innerHTML = cards.join('');
   totalsEl.style.display = all.length ? '' : 'none';
   // ─────────────────────────────────────────────────────────────
 
