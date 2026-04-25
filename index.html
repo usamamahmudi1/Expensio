@@ -798,11 +798,17 @@ textarea { resize: vertical; min-height: 58px; }
 
   <!-- Loans section -->
   <div style="margin-bottom:2rem;">
-    <div class="section-header" style="margin-bottom:1rem;">
-      <div class="section-title">Loans</div>
+    <div class="section-header" onclick="toggleLoanSection()" style="margin-bottom:0;cursor:pointer;user-select:none;">
+      <div class="section-title" style="display:flex;align-items:center;gap:0.5rem;">
+        Loans
+        <span id="loanSectionBadge" style="font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:600;color:var(--muted);"></span>
+      </div>
+      <span id="loanSectionChevron" style="font-size:1.1rem;color:var(--muted);display:inline-block;transition:transform 0.22s;line-height:1;">›</span>
     </div>
-    <div class="loan-list" id="loanList">
-      <div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>
+    <div id="loanSectionBody" style="display:none;margin-top:1rem;">
+      <div class="loan-list" id="loanList">
+        <div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>
+      </div>
     </div>
   </div>
 
@@ -1477,9 +1483,10 @@ let defaultView     = 'month';
 let _currentView    = 'dashboard';
 let analyticsPeriod = 'month';
 let summaryPeriod   = 'month';
-let loans           = [];
-let loanRepayments  = [];
-let expandedLoanId  = null;
+let loans            = [];
+let loanRepayments   = [];
+let expandedLoanId   = null;
+let _loanSectionOpen = false;
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -2099,6 +2106,21 @@ function filterLoanEvents(f) {
 
 // ── Render loan section ────────────────────────────────────────
 function renderLoanSection() {
+  // Update collapsed badge
+  const badge = document.getElementById('loanSectionBadge');
+  if (badge) {
+    const activeCount = loans.filter(l => {
+      const repaid = loanRepayments.filter(r => r.loanId === l.id).reduce((a, r) => a + r.amount, 0);
+      return repaid < l.amount;
+    }).length;
+    const outstanding = getOutstandingDebt();
+    badge.textContent = loans.length === 0
+      ? ''
+      : activeCount > 0
+        ? `${activeCount} active · ${fmt(outstanding)} outstanding`
+        : `${loans.length} loan${loans.length !== 1 ? 's' : ''} · all repaid`;
+  }
+
   const el = document.getElementById('loanList');
   if (!loans.length) {
     el.innerHTML = '<div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>';
@@ -2267,6 +2289,12 @@ window.deleteLoanRepayment = async function(id) {
 window.toggleLoan = function(id) {
   expandedLoanId = expandedLoanId === id ? null : id;
   renderLoanSection();
+};
+
+window.toggleLoanSection = function() {
+  _loanSectionOpen = !_loanSectionOpen;
+  document.getElementById('loanSectionBody').style.display = _loanSectionOpen ? '' : 'none';
+  document.getElementById('loanSectionChevron').style.transform = _loanSectionOpen ? 'rotate(90deg)' : '';
 };
 
 // ── Add expense ────────────────────────────────────────────────
