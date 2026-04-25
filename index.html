@@ -913,8 +913,8 @@ textarea { resize: vertical; min-height: 58px; }
   <div class="history-totals-wrap" id="historyTotalsWrap" style="display:none;">
     <div class="history-totals" id="historyTotals"></div>
     <div class="hist-nav-btns" id="histNavBtns" style="display:none;">
-      <button class="hist-nav-btn" id="histNavPrev" onclick="navigateDay(-1)" title="Previous day">&#8249;</button>
-      <button class="hist-nav-btn" id="histNavNext" onclick="navigateDay(1)" title="Next day">&#8250;</button>
+      <button class="hist-nav-btn" id="histNavPrev" onclick="navigatePeriod(-1)" title="Previous">&#8249;</button>
+      <button class="hist-nav-btn" id="histNavNext" onclick="navigatePeriod(1)" title="Next">&#8250;</button>
     </div>
   </div>
   <div class="expense-list" id="expenseList"></div>
@@ -1530,6 +1530,7 @@ let catFilter       = '';
 let showRecurring   = false;
 let editingId       = null;
 let filterDate      = '';
+let periodOffset    = 0; // history-only period navigation offset
 let filterDays      = [];
 let typeFilter      = 'all';
 let customRangeFrom = '';
@@ -1599,22 +1600,21 @@ function catColor(name) {
 }
 
 // ── Month cycle helper ─────────────────────────────────────────
-function getMonthRange() {
+function getMonthRange(offset = 0) {
   const now  = new Date();
   const day  = now.getDate();
   const s    = monthCycleStart;
   let cycleStart, cycleEnd;
   if (s === 1) {
-    cycleStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    cycleEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    cycleStart = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    cycleEnd   = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
   } else {
-    // current cycle: starts on day s of the previous or current month
     if (day >= s) {
-      cycleStart = new Date(now.getFullYear(), now.getMonth(), s);
-      cycleEnd   = new Date(now.getFullYear(), now.getMonth() + 1, s - 1);
+      cycleStart = new Date(now.getFullYear(), now.getMonth() + offset, s);
+      cycleEnd   = new Date(now.getFullYear(), now.getMonth() + offset + 1, s - 1);
     } else {
-      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, s);
-      cycleEnd   = new Date(now.getFullYear(), now.getMonth(), s - 1);
+      cycleStart = new Date(now.getFullYear(), now.getMonth() - 1 + offset, s);
+      cycleEnd   = new Date(now.getFullYear(), now.getMonth() + offset, s - 1);
     }
   }
   cycleStart.setHours(0, 0, 0, 0);
@@ -1622,33 +1622,51 @@ function getMonthRange() {
   return { cycleStart, cycleEnd };
 }
 
-function getWeekRange() {
+function getWeekRange(offset = 0) {
   const now = new Date();
-  const dow = now.getDay(); // 0=Sun … 6=Sat
+  const dow = now.getDay();
   const daysFromMon = (dow + 6) % 7;
-  const mon = new Date(now); mon.setDate(now.getDate() - daysFromMon); mon.setHours(0, 0, 0, 0);
+  const mon = new Date(now); mon.setDate(now.getDate() - daysFromMon + offset * 7); mon.setHours(0, 0, 0, 0);
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23, 59, 59, 999);
   return { weekStart: mon, weekEnd: sun };
+}
+
+function getOffsetRange(f, offset) {
+  const now = new Date();
+  if (f === 'week') {
+    if (weekType === 'fixed') { const { weekStart, weekEnd } = getWeekRange(offset); return { s: weekStart, e: weekEnd }; }
+    const ref = new Date(now); ref.setDate(now.getDate() + offset * 7);
+    const e = new Date(ref); e.setHours(23, 59, 59, 999);
+    const s = new Date(ref); s.setDate(ref.getDate() - 6); s.setHours(0, 0, 0, 0);
+    return { s, e };
+  }
+  if (f === 'month') { const { cycleStart, cycleEnd } = getMonthRange(offset); return { s: cycleStart, e: cycleEnd }; }
+  if (f === 'year')  { const y = now.getFullYear() + offset; return { s: new Date(y, 0, 1, 0, 0, 0, 0), e: new Date(y, 11, 31, 23, 59, 59, 999) }; }
+  return null;
 }
 
 function getPeriodLabel(f) {
   const now = new Date();
   const fmtFull  = d => d.toLocaleDateString('en-SE', { day: 'numeric', month: 'short', year: 'numeric' });
   const fmtShort = d => d.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
-  if (f === 'day') return 'Today · ' + now.toLocaleDateString('en-SE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  if (f === 'day') {
+    const ref = filterDate ? new Date(filterDate + 'T12:00:00') : now;
+    return (filterDate ? '' : 'Today · ') + ref.toLocaleDateString('en-SE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
   if (f === 'week') {
     if (weekType === 'fixed') {
-      const { weekStart, weekEnd } = getWeekRange();
+      const { weekStart, weekEnd } = getWeekRange(periodOffset);
       return 'Mon–Sun · ' + fmtShort(weekStart) + ' – ' + fmtFull(weekEnd);
     }
-    const w = new Date(now); w.setDate(now.getDate() - 6); w.setHours(0, 0, 0, 0);
-    return 'Rolling 7 days · ' + fmtShort(w) + ' – ' + fmtFull(now);
+    const ref = new Date(now); ref.setDate(now.getDate() + periodOffset * 7);
+    const w = new Date(ref); w.setDate(ref.getDate() - 6); w.setHours(0, 0, 0, 0);
+    return 'Rolling 7 days · ' + fmtShort(w) + ' – ' + fmtFull(ref);
   }
   if (f === 'month') {
-    const { cycleStart, cycleEnd } = getMonthRange();
+    const { cycleStart, cycleEnd } = getMonthRange(periodOffset);
     return fmtShort(cycleStart) + ' – ' + fmtFull(cycleEnd);
   }
-  if (f === 'year') return 'Year · ' + now.getFullYear();
+  if (f === 'year') return 'Year · ' + (now.getFullYear() + periodOffset);
   if (f === 'custom') {
     if (!customRangeFrom || !customRangeTo) return '';
     return fmtFull(new Date(customRangeFrom + 'T12:00:00')) + ' – ' + fmtFull(new Date(customRangeTo + 'T12:00:00'));
@@ -1890,6 +1908,15 @@ function renderList() {
   let filtExp = filterExpenses(currentFilter);
   let filtInc = filterIncome(currentFilter);
 
+  // Apply history period offset for week/month/year navigation
+  if (periodOffset !== 0 && !filterDate && ['week', 'month', 'year'].includes(currentFilter)) {
+    const range = getOffsetRange(currentFilter, periodOffset);
+    if (range) {
+      filtExp = expenses.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= range.s && d <= range.e; });
+      filtInc = income.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= range.s && d <= range.e; });
+    }
+  }
+
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     filtExp = filtExp.filter(e => e.name.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || String(e.amount).includes(q));
@@ -1908,6 +1935,10 @@ function renderList() {
   // ── Loan type filter: show loan events instead of expenses/income ──
   if (typeFilter === 'loan') {
     let loanEvts = filterLoanEvents(currentFilter);
+    if (periodOffset !== 0 && ['week', 'month', 'year'].includes(currentFilter)) {
+      const range = getOffsetRange(currentFilter, periodOffset);
+      if (range) loanEvts = loanEvts.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= range.s && d <= range.e; });
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       loanEvts = loanEvts.filter(e => {
@@ -2091,7 +2122,8 @@ function renderList() {
   totalsEl.innerHTML = cards.join('');
   const wrapEl = document.getElementById('historyTotalsWrap');
   wrapEl.style.display = cards.length ? '' : 'none';
-  document.getElementById('histNavBtns').style.display = filterDate ? '' : 'none';
+  const showNav = (!!filterDate || ['day', 'week', 'month', 'year'].includes(currentFilter)) && typeFilter !== 'loan';
+  document.getElementById('histNavBtns').style.display = showNav ? '' : 'none';
   // ─────────────────────────────────────────────────────────────
 
   const el = document.getElementById('expenseList');
@@ -2749,6 +2781,7 @@ window.setSummaryPeriod = function(p) {
 
 window.setFilter = function(f, el) {
   currentFilter = f;
+  periodOffset  = 0;
   ['tabDay','tabWeek','tabMonth','tabYear','tabAll','tabCustom'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('customRangeRow').style.display = f === 'custom' ? '' : 'none';
@@ -2802,14 +2835,20 @@ window.setFilterDate = function(val) {
   renderList();
 };
 
-window.navigateDay = function(delta) {
-  const base = filterDate || today();
-  const d = new Date(base + 'T12:00:00');
-  d.setDate(d.getDate() + delta);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  setFilterDate(`${y}-${m}-${day}`);
+window.navigatePeriod = function(delta) {
+  if (filterDate || currentFilter === 'day') {
+    // Day navigation: move filterDate by one day
+    const base = filterDate || today();
+    const d = new Date(base + 'T12:00:00');
+    d.setDate(d.getDate() + delta);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const dy = String(d.getDate()).padStart(2, '0');
+    setFilterDate(`${y}-${mo}-${dy}`);
+  } else {
+    periodOffset += delta;
+    renderList();
+  }
 };
 window.toggleDay = function(d) {
   const idx = filterDays.indexOf(d);
@@ -2830,7 +2869,7 @@ window.clearDateFilters = function() {
 window.clearAllFilters = function() {
   searchQuery  = '';  catFilter = '';  showRecurring = false;
   filterDate   = '';  filterDays = []; typeFilter    = 'all';
-  customRangeFrom = ''; customRangeTo = '';
+  customRangeFrom = ''; customRangeTo = ''; periodOffset = 0;
   document.getElementById('searchInput').value        = '';
   document.getElementById('catFilterSelect').value    = '';
   document.getElementById('recurringToggle').checked  = false;
