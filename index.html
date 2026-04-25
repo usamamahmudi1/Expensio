@@ -1985,8 +1985,9 @@ function renderList() {
   const showExpTotal = typeFilter !== 'inc';
   const showIncTotal = typeFilter !== 'exp';
   const isCustom = currentFilter === 'custom' && customRangeFrom && customRangeTo;
+  const isSingleDay = currentFilter === 'day' || !!filterDate;
   const useProrated = showExpTotal && showIncTotal &&
-    (currentFilter === 'day' || currentFilter === 'week') && !isCustom;
+    (isSingleDay || currentFilter === 'week') && !isCustom;
   const cards = [];
 
   if (useProrated) {
@@ -1998,15 +1999,19 @@ function renderList() {
       const periodDays  = currentFilter === 'week' ? 7 : 1;
       const periodInc   = dailyRate * periodDays;
 
-      // Running balance: expected income to date minus all expenses since cycle start
-      const nowD = new Date(); nowD.setHours(12, 0, 0, 0);
-      const daysElapsed   = Math.max(1, Math.round((nowD - cycleStart) / 864e5) + 1);
+      // Running balance: use selected date as reference if a specific date is picked
+      const refDate = filterDate ? new Date(filterDate + 'T12:00:00') : new Date();
+      refDate.setHours(12, 0, 0, 0);
+      const daysElapsed    = Math.max(1, Math.round((refDate - cycleStart) / 864e5) + 1);
       const expectedToDate = dailyRate * daysElapsed;
-      const cycleExpenses  = sum(filterExpenses('month'));
+      const cycleExpenses  = sum(expenses.filter(e => {
+        const d = new Date(e.date + 'T12:00:00');
+        return d >= cycleStart && d <= refDate;
+      }));
       const runningBal     = expectedToDate - cycleExpenses;
 
       const periodNet  = periodInc - expSum;
-      const netLabel   = currentFilter === 'week' ? "Week's Net" : "Today's Net";
+      const netLabel   = currentFilter === 'week' ? "Week's Net" : filterDate && filterDate !== today() ? "Day's Net" : "Today's Net";
       const cycleStartStr = cycleStart.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
 
       // Expenses
