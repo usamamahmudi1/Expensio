@@ -1994,7 +1994,7 @@ function renderList() {
     const monthIncSum = sum(filterIncome('month'));
     if (monthIncSum > 0) {
       const { cycleStart, cycleEnd } = getMonthRange();
-      const totalDays   = Math.round((cycleEnd - cycleStart) / 864e5) + 1;
+      const totalDays   = Math.round((cycleEnd - cycleStart) / 864e5);
       const dailyRate   = monthIncSum / totalDays;
       const periodDays  = currentFilter === 'week' ? 7 : 1;
       const periodInc   = dailyRate * periodDays;
@@ -2002,7 +2002,7 @@ function renderList() {
       // Running balance: use selected date as reference if a specific date is picked
       const refDate = filterDate ? new Date(filterDate + 'T12:00:00') : new Date();
       refDate.setHours(12, 0, 0, 0);
-      const daysElapsed    = Math.max(1, Math.round((refDate - cycleStart) / 864e5) + 1);
+      const daysElapsed    = Math.max(1, Math.round((refDate - cycleStart) / 864e5));
       const expectedToDate = dailyRate * daysElapsed;
       const cycleExpenses  = sum(expenses.filter(e => {
         const d = new Date(e.date + 'T12:00:00');
