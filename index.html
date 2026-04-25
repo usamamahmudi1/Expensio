@@ -833,7 +833,7 @@ textarea { resize: vertical; min-height: 58px; }
   </div>
 
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="Search expenses…" oninput="setSearch(this.value)" />
+    <input type="text" id="searchInput" placeholder="Search by name, amount, notes…" oninput="setSearch(this.value)" />
     <select id="catFilterSelect" onchange="setCatFilter(this.value)">
       <option value="">All categories</option>
     </select>
@@ -1780,8 +1780,8 @@ function renderList() {
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    filtExp = filtExp.filter(e => e.name.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
-    filtInc = filtInc.filter(e => e.description.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
+    filtExp = filtExp.filter(e => e.name.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || String(e.amount).includes(q));
+    filtInc = filtInc.filter(e => e.description.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || String(e.amount).includes(q));
   }
   if (catFilter)     filtExp = filtExp.filter(e => e.category === catFilter);
   if (showRecurring) filtExp = filtExp.filter(e => e.recurring);
@@ -1795,7 +1795,15 @@ function renderList() {
 
   // ── Loan type filter: show loan events instead of expenses/income ──
   if (typeFilter === 'loan') {
-    const loanEvts = filterLoanEvents(currentFilter);
+    let loanEvts = filterLoanEvents(currentFilter);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      loanEvts = loanEvts.filter(e => {
+        if (e._t === 'loan') return e.lender.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q) || String(e.amount).includes(q);
+        const parent = loans.find(l => l.id === e.loanId);
+        return (e.notes||'').toLowerCase().includes(q) || String(e.amount).includes(q) || (parent && parent.lender.toLowerCase().includes(q));
+      });
+    }
     const totalsEl = document.getElementById('historyTotals');
     const lnEvts   = loanEvts.filter(e => e._t === 'loan');
     const rpEvts   = loanEvts.filter(e => e._t === 'repay');
