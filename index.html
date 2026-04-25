@@ -125,6 +125,8 @@ header {
 .stat-card.budget-card { background: var(--accent-soft); border-color: #e8c4bb; }
 .stat-card.budget-card .stat-value { color: var(--accent); }
 [data-theme="dark"] .stat-card.budget-card { border-color: #5a2a1e; }
+.summary-section-lbl { grid-column: 1 / -1; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); margin-top: 0.5rem; }
+.summary-section-lbl:first-child { margin-top: 0; }
 
 .budget-bar-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; }
 .budget-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
@@ -221,6 +223,17 @@ textarea { resize: vertical; min-height: 58px; }
 .day-pill.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .clear-link { font-size: 0.78rem; color: var(--accent); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; white-space: nowrap; padding: 0; margin-left: auto; }
 .clear-link:hover { text-decoration: underline; }
+
+.history-totals { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; padding: 0.6rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; font-size: 0.83rem; }
+.ht-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-right: 0.2rem; }
+.ht-exp { color: var(--accent); }
+.ht-exp strong { font-weight: 600; }
+.ht-inc { color: var(--green); }
+.ht-inc strong { font-weight: 600; }
+.ht-net { font-weight: 600; color: var(--ink); }
+.ht-net.pos { color: var(--green); }
+.ht-net.neg { color: var(--accent); }
+.ht-sep { color: var(--border); font-size: 1rem; padding: 0 0.15rem; }
 
 .expense-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .expense-item {
@@ -418,6 +431,48 @@ textarea { resize: vertical; min-height: 58px; }
 .voice-live    { font-size: 0.82rem; color: var(--muted); font-style: italic; min-height: 38px; padding: 0.35rem 0 0.75rem; line-height: 1.5; }
 .voice-heard   { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.85rem; color: var(--muted); font-style: italic; margin-bottom: 1rem; min-height: 38px; }
 
+/* ── Main nav ─────────────────────────────────────────────────── */
+.main-nav { display: flex; gap: 0.4rem; margin-bottom: 2rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 0.3rem; }
+.main-nav-btn { flex: 1; padding: 0.55rem 1rem; border: none; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; color: var(--muted); background: transparent; transition: all 0.15s; }
+.main-nav-btn.active { background: var(--ink); color: var(--paper); }
+.main-nav-btn:hover:not(.active) { background: var(--border); color: var(--ink); }
+
+/* ── Analytics tab ───────────────────────────────────────────── */
+.a-period-bar { display: flex; gap: 0.4rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+.a-period-btn { padding: 0.38rem 1rem; border: 1px solid var(--border); border-radius: 99px; font-size: 0.82rem; font-weight: 500; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.a-period-btn.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.a-period-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem; }
+.kpi-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+.kpi-value { font-family: 'DM Serif Display', serif; font-size: 1.5rem; line-height: 1.1; color: var(--ink); word-break: break-word; }
+.kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; }
+.kpi-card.pos .kpi-value { color: var(--green); }
+.kpi-card.neg .kpi-value { color: var(--accent); }
+
+.a-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+@media (max-width: 680px) { .a-charts-grid { grid-template-columns: 1fr; } }
+.a-chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+.a-chart-title { font-weight: 600; font-size: 0.85rem; color: var(--ink); margin-bottom: 0.85rem; }
+
+.a-section-title { font-family: 'DM Serif Display', serif; font-size: 1.15rem; margin-bottom: 1rem; color: var(--ink); }
+
+.insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+@media (max-width: 680px) { .insight-grid { grid-template-columns: 1fr; } }
+.insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem; display: flex; gap: 0.8rem; align-items: flex-start; }
+.insight-icon { font-size: 1.45rem; flex-shrink: 0; line-height: 1; margin-top: 0.1rem; }
+.insight-title { font-weight: 600; font-size: 0.84rem; color: var(--ink); margin-bottom: 0.25rem; }
+.insight-text { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+
+.suggestion-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2.5rem; }
+.suggestion-card { background: var(--amber-soft); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; display: flex; gap: 0.85rem; align-items: flex-start; }
+.suggestion-card.positive { background: var(--green-soft); }
+.suggestion-card.warning  { background: var(--red-soft); }
+.suggestion-icon { font-size: 1.25rem; flex-shrink: 0; line-height: 1; margin-top: 0.1rem; }
+.suggestion-title { font-weight: 600; font-size: 0.84rem; color: var(--ink); margin-bottom: 0.25rem; }
+.suggestion-text { font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
+
 @media print {
   header, .loading-overlay, .modal-backdrop, .toast,
   .budget-bar-wrap, .chart-panel, .two-col,
@@ -520,38 +575,22 @@ textarea { resize: vertical; min-height: 58px; }
 
 <div class="container">
 
-  <div class="summary-grid">
-    <div class="stat-card budget-card">
-      <div class="stat-label" id="monthCardLabel">Month Spent</div>
-      <div class="stat-value" id="monthTotal">—</div>
-      <div class="stat-sub" id="monthCount">0 expenses</div>
-    </div>
-    <div class="stat-card income-card">
-      <div class="stat-label" id="monthIncCardLabel">Month Income</div>
-      <div class="stat-value" id="monthIncomeTotal">—</div>
-      <div class="stat-sub" id="monthIncomeCount">0 payments</div>
-    </div>
-    <div class="stat-card" id="balanceCard">
-      <div class="stat-label">Net Balance</div>
-      <div class="stat-value" id="balanceValue">—</div>
-      <div class="stat-sub" id="balanceSub">This month</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">This Week</div>
-      <div class="stat-value" id="weekTotal">—</div>
-      <div class="stat-sub" id="weekCount">0 expenses</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Today</div>
-      <div class="stat-value" id="todayTotal">—</div>
-      <div class="stat-sub" id="todayCount">0 expenses</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">This Year</div>
-      <div class="stat-value" id="yearTotal">—</div>
-      <div class="stat-sub" id="yearCount">0 expenses</div>
-    </div>
+  <div class="main-nav">
+    <button class="main-nav-btn active" id="navDashboard" onclick="showMainView('dashboard')">Dashboard</button>
+    <button class="main-nav-btn" id="navAnalytics" onclick="showMainView('analytics')">📈 Analytics</button>
   </div>
+
+  <div id="dashboardView">
+
+  <div class="tabs" id="summaryPeriodTabs" style="margin-bottom:1rem;">
+    <button class="tab" id="sp-day"   onclick="setSummaryPeriod('day')">Daily</button>
+    <button class="tab" id="sp-week"  onclick="setSummaryPeriod('week')">Weekly</button>
+    <button class="tab active" id="sp-month" onclick="setSummaryPeriod('month')">Monthly</button>
+    <button class="tab" id="sp-year"  onclick="setSummaryPeriod('year')">Yearly</button>
+    <button class="tab" id="sp-all"   onclick="setSummaryPeriod('all')">Overall</button>
+  </div>
+
+  <div class="summary-grid" id="summaryGrid"></div>
 
   <div class="budget-bar-wrap">
     <div class="budget-bar-header">
@@ -682,7 +721,7 @@ textarea { resize: vertical; min-height: 58px; }
 
     <div class="panel">
       <div class="panel-title">
-        This month by category
+        <span id="catPanelTitle">This month by category</span>
         <button class="panel-link" onclick="openCatsModal()">Manage</button>
       </div>
       <div class="cat-list" id="catBreakdown">
@@ -749,7 +788,47 @@ textarea { resize: vertical; min-height: 58px; }
     <button class="clear-link" id="clearDateFiltersBtn" onclick="clearDateFilters()" style="display:none;">✕ Clear</button>
   </div>
 
+  <div class="history-totals" id="historyTotals" style="display:none;"></div>
   <div class="expense-list" id="expenseList"></div>
+  </div><!-- /dashboardView -->
+
+  <div id="analyticsView" style="display:none;">
+    <div class="a-period-bar">
+      <button class="a-period-btn active" id="apMonth" onclick="setAnalyticsPeriod('month')">This Month</button>
+      <button class="a-period-btn" id="ap3mo"   onclick="setAnalyticsPeriod('3mo')">3 Months</button>
+      <button class="a-period-btn" id="ap6mo"   onclick="setAnalyticsPeriod('6mo')">6 Months</button>
+      <button class="a-period-btn" id="apYear"  onclick="setAnalyticsPeriod('year')">This Year</button>
+      <button class="a-period-btn" id="apAll"   onclick="setAnalyticsPeriod('all')">All Time</button>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="a-charts-grid">
+      <div class="a-chart-card">
+        <div class="a-chart-title">Income vs Expenses by Month</div>
+        <div id="aChartGrouped"></div>
+      </div>
+      <div class="a-chart-card">
+        <div class="a-chart-title">Spending by Category</div>
+        <div id="aChartDonut"></div>
+      </div>
+      <div class="a-chart-card">
+        <div class="a-chart-title">Spending by Day of Week</div>
+        <div id="aChartDow"></div>
+      </div>
+      <div class="a-chart-card">
+        <div class="a-chart-title">Monthly Net Balance</div>
+        <div id="aChartBalance"></div>
+      </div>
+    </div>
+
+    <div class="a-section-title">Key Insights</div>
+    <div class="insight-grid" id="insightGrid"></div>
+
+    <div class="a-section-title">Smart Suggestions</div>
+    <div class="suggestion-list" id="suggestionList"></div>
+  </div><!-- /analyticsView -->
+
 </div>
 
 <!-- Budget Modal -->
@@ -1318,6 +1397,9 @@ let typeFilter      = 'all';
 let customRangeFrom = '';
 let customRangeTo   = '';
 let defaultView     = 'month';
+let _currentView    = 'dashboard';
+let analyticsPeriod = 'month';
+let summaryPeriod   = 'month';
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -1408,47 +1490,74 @@ function filterExpenses(f) {
 function sum(arr) { return arr.reduce((a, e) => a + e.amount, 0); }
 
 // ── Summary cards + budget bar ─────────────────────────────────
+const _SP_LABELS = {
+  day:    { spent: "Today's Spending", income: "Today's Income",  bal: 'today' },
+  week:   { spent: 'Week Spent',       income: 'Week Income',     bal: 'this week' },
+  month:  { spent: 'Month Spent',      income: 'Month Income',    bal: 'this month' },
+  year:   { spent: 'Year Spent',       income: 'Year Income',     bal: 'this year' },
+  all:    { spent: 'Total Spent',      income: 'Total Income',    bal: 'all time' },
+  custom: { spent: 'Period Spent',     income: 'Period Income',   bal: 'in period' },
+};
 function updateSummary() {
-  const isCustom  = currentFilter === 'custom' && customRangeFrom && customRangeTo;
-  const moPeriod  = isCustom ? 'custom' : 'month';
-  const mo = filterExpenses(moPeriod), we = filterExpenses('week'),
-        da = filterExpenses('day'),    yr = filterExpenses('year');
+  const isCustom     = currentFilter === 'custom' && customRangeFrom && customRangeTo;
+  const activePeriod = isCustom ? 'custom' : summaryPeriod;
 
-  const set = (id, val, count) => {
-    document.getElementById(id + 'Total').textContent = fmt(val);
-    document.getElementById(id + 'Count').textContent = count + ' expense' + (count !== 1 ? 's' : '');
-  };
-  set('month', sum(mo), mo.length);
-  set('week',  sum(we), we.length);
-  set('today', sum(da), da.length);
-  set('year',  sum(yr), yr.length);
+  function _periodCards(periodKey, shortLabel) {
+    const exp    = filterExpenses(periodKey);
+    const inc    = filterIncome(periodKey);
+    const spent  = sum(exp);
+    const income = sum(inc);
+    const net    = income - spent;
+    const lbl    = _SP_LABELS[periodKey] || _SP_LABELS.month;
+    return `
+      <div class="stat-card budget-card">
+        <div class="stat-label">${shortLabel ? shortLabel + ' Spent' : lbl.spent}</div>
+        <div class="stat-value">${fmt(spent)}</div>
+        <div class="stat-sub">${exp.length} expense${exp.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="stat-card income-card">
+        <div class="stat-label">${shortLabel ? shortLabel + ' Income' : lbl.income}</div>
+        <div class="stat-value">${fmt(income)}</div>
+        <div class="stat-sub">${inc.length} payment${inc.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="stat-card ${net >= 0 ? 'balance-pos' : 'balance-neg'}">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value">${fmt(Math.abs(net))}</div>
+        <div class="stat-sub">${net >= 0 ? 'surplus' : 'deficit'} ${lbl.bal}</div>
+      </div>`;
+  }
 
-  // Adapt month card labels
-  const periodLabel = isCustom
-    ? customRangeFrom + ' – ' + customRangeTo
-    : null;
-  document.getElementById('monthCardLabel').textContent    = isCustom ? 'Period Spent'  : 'Month Spent';
-  document.getElementById('monthIncCardLabel').textContent = isCustom ? 'Period Income' : 'Month Income';
+  let html = '';
 
-  const moInc       = filterIncome(moPeriod);
-  const monthIncome = sum(moInc);
-  document.getElementById('monthIncomeTotal').textContent = fmt(monthIncome);
-  document.getElementById('monthIncomeCount').textContent = moInc.length + ' payment' + (moInc.length !== 1 ? 's' : '');
+  if (activePeriod === 'all' && !isCustom) {
+    // Overall: show all four periods with section dividers
+    const sections = [
+      { key: 'day',   label: 'Daily' },
+      { key: 'week',  label: 'Weekly' },
+      { key: 'month', label: 'Monthly' },
+      { key: 'year',  label: 'Yearly' },
+    ];
+    sections.forEach(s => {
+      html += `<div class="summary-section-lbl">${s.label}</div>` + _periodCards(s.key);
+    });
+  } else {
+    // Single period: exactly 3 cards, nothing else
+    html = _periodCards(activePeriod);
+  }
 
-  const spent = sum(mo);
-  const balance = monthIncome - spent;
-  document.getElementById('balanceValue').textContent = fmt(Math.abs(balance));
+  document.getElementById('summaryGrid').innerHTML = html;
+
+  // Budget bar always uses monthly data (budget is a monthly concept)
+  const moExp   = filterExpenses(isCustom ? 'custom' : 'month');
+  const moSpent = sum(moExp);
+  const fill    = document.getElementById('budgetFill');
   const periodWord = isCustom ? 'in period' : 'this month';
-  document.getElementById('balanceSub').textContent = balance >= 0 ? 'surplus ' + periodWord : 'deficit ' + periodWord;
-  const bc = document.getElementById('balanceCard');
-  bc.className = 'stat-card ' + (balance >= 0 ? 'balance-pos' : 'balance-neg');
-  const fill  = document.getElementById('budgetFill');
   if (budget > 0) {
-    const pct = Math.min((spent / budget) * 100, 100);
+    const pct = Math.min((moSpent / budget) * 100, 100);
     fill.style.width = pct + '%';
     fill.className   = 'budget-bar-fill' + (pct >= 100 ? ' over' : pct >= 75 ? ' warn' : '');
-    document.getElementById('budgetLabel').textContent = fmt(spent) + ' / ' + fmt(budget);
-    const rem = budget - spent;
+    document.getElementById('budgetLabel').textContent = fmt(moSpent) + ' / ' + fmt(budget);
+    const rem = budget - moSpent;
     document.getElementById('budgetRemain').textContent = rem >= 0
       ? fmt(rem) + ' remaining ' + periodWord
       : fmt(Math.abs(rem)) + ' over budget!';
@@ -1460,16 +1569,23 @@ function updateSummary() {
 }
 
 // ── Category breakdown ─────────────────────────────────────────
+const _CAT_TITLES = {
+  day: "Today's spending", week: 'This week by category',
+  month: 'This month by category', year: 'This year by category',
+  all: 'All-time by category', custom: 'Period by category',
+};
 function updateCatBreakdown() {
   const isCustom = currentFilter === 'custom' && customRangeFrom && customRangeTo;
-  const mo    = filterExpenses(isCustom ? 'custom' : 'month');
+  const activePeriod = isCustom ? 'custom' : summaryPeriod;
+  const mo    = filterExpenses(activePeriod);
   const cats  = {};
   mo.forEach(e => { cats[e.category] = (cats[e.category] || 0) + e.amount; });
   const total  = sum(mo) || 1;
   const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
   const el     = document.getElementById('catBreakdown');
+  document.getElementById('catPanelTitle').textContent = _CAT_TITLES[activePeriod] || _CAT_TITLES.month;
   if (!sorted.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No expenses this ' + (isCustom ? 'period' : 'month') + '.</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No expenses ' + (activePeriod === 'day' ? 'today' : activePeriod === 'custom' ? 'in this period' : 'this ' + activePeriod) + '.</div>';
     return;
   }
   el.innerHTML = sorted.map(([name, amt]) => {
@@ -1585,6 +1701,25 @@ function renderList() {
     return diff !== 0 ? diff : (a._t === 'inc' ? -1 : 1);
   });
 
+  // ── History totals bar ────────────────────────────────────────
+  const totalsEl = document.getElementById('historyTotals');
+  const expSum = filtExp.reduce((a, e) => a + e.amount, 0);
+  const incSum = filtInc.reduce((a, e) => a + e.amount, 0);
+  const showExpTotal = typeFilter !== 'inc';
+  const showIncTotal = typeFilter !== 'exp';
+  const parts = [];
+  parts.push(`<span class="ht-label">Selected:</span>`);
+  if (showExpTotal) parts.push(`<span class="ht-exp">${filtExp.length} expense${filtExp.length !== 1 ? 's' : ''} &nbsp;<strong>${fmt(expSum)}</strong></span>`);
+  if (showExpTotal && showIncTotal) parts.push(`<span class="ht-sep">|</span>`);
+  if (showIncTotal) parts.push(`<span class="ht-inc">${filtInc.length} payment${filtInc.length !== 1 ? 's' : ''} &nbsp;<strong>+${fmt(incSum)}</strong></span>`);
+  if (showExpTotal && showIncTotal && (filtExp.length > 0 || filtInc.length > 0)) {
+    const net = incSum - expSum;
+    parts.push(`<span class="ht-sep">|</span><span class="ht-net ${net >= 0 ? 'pos' : 'neg'}">Net ${net >= 0 ? '+' : ''}${fmt(net)}</span>`);
+  }
+  totalsEl.innerHTML = parts.join('');
+  totalsEl.style.display = all.length ? '' : 'none';
+  // ─────────────────────────────────────────────────────────────
+
   const el = document.getElementById('expenseList');
   if (!all.length) { el.innerHTML = '<div class="empty-state">No entries found.</div>'; return; }
 
@@ -1625,6 +1760,7 @@ function refresh() {
   updateCatBreakdown();
   renderChart();
   renderList();
+  if (_currentView === 'analytics') renderAnalytics();
 }
 
 // ── Category selects ───────────────────────────────────────────
@@ -1672,14 +1808,19 @@ async function loadSettings() {
     }
   } catch(e) { console.warn('Settings load error', e); }
   populateCatSelects();
-  // Apply default view
+  // Apply default view to history filter
   if (defaultView !== 'day') {
     currentFilter = defaultView;
     const tabMap = { day: 'tabDay', week: 'tabWeek', month: 'tabMonth', year: 'tabYear', all: 'tabAll' };
-    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    ['tabDay','tabWeek','tabMonth','tabYear','tabAll','tabCustom'].forEach(id => document.getElementById(id)?.classList.remove('active'));
     const tabEl = document.getElementById(tabMap[defaultView]);
     if (tabEl) tabEl.classList.add('active');
   }
+  // Apply default view to summary period selector
+  const spKey = ['day','week','month','year','all'].includes(defaultView) ? defaultView : 'month';
+  summaryPeriod = spKey;
+  ['day','week','month','year','all'].forEach(k =>
+    document.getElementById('sp-' + k).classList.toggle('active', k === spKey));
 }
 
 // ── Real-time listener ─────────────────────────────────────────
@@ -1804,9 +1945,17 @@ window.deleteFromEdit = async function() {
 };
 
 // ── Filter / search ────────────────────────────────────────────
+window.setSummaryPeriod = function(p) {
+  summaryPeriod = p;
+  ['day','week','month','year','all'].forEach(k =>
+    document.getElementById('sp-' + k).classList.toggle('active', k === p));
+  updateSummary();
+  updateCatBreakdown();
+};
+
 window.setFilter = function(f, el) {
   currentFilter = f;
-  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  ['tabDay','tabWeek','tabMonth','tabYear','tabAll','tabCustom'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('customRangeRow').style.display = f === 'custom' ? '' : 'none';
   refresh();
@@ -1886,7 +2035,7 @@ window.clearAllFilters = function() {
   // Switch back to default period tab
   const tabMap = { day: 'tabDay', week: 'tabWeek', month: 'tabMonth', year: 'tabYear', all: 'tabAll' };
   currentFilter = defaultView;
-  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  ['tabDay','tabWeek','tabMonth','tabYear','tabAll','tabCustom'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   const tabEl = document.getElementById(tabMap[defaultView] || 'tabMonth');
   if (tabEl) tabEl.classList.add('active');
   document.getElementById('customRangeRow').style.display = 'none';
@@ -2681,6 +2830,7 @@ const ALL_TIPS = [
   { icon: '🏷️', title: 'Income categories', text: 'Tap Manage → Income tab to add, rename or recolor income categories (Salary, Freelance, Bonus, etc.) with custom colors.' },
   { icon: '💡', title: 'Net balance', text: 'The Net Balance card shows income minus expenses for the current period — green means surplus, red means deficit.' },
   { icon: '📱', title: 'Install as app', text: 'On mobile, use your browser\'s "Add to Home Screen" option to install Expensio as an icon for quick one-tap access.' },
+  { icon: '📈', title: 'Analytics tab', text: 'Tap Analytics in the top navigation to explore in-depth charts (Income vs Expenses, Category breakdown, Day-of-week, Balance trend), KPI metrics, key insights, and smart personalized suggestions.' },
 ];
 
 // ── Auto tip card (one per session) ───────────────────────────
@@ -2778,6 +2928,348 @@ window.guideNav = function(dir) {
   _guideIndex = Math.max(0, Math.min(list.length - 1, _guideIndex + dir));
   _renderGuideCard();
 };
+
+// ── Analytics ──────────────────────────────────────────────────
+
+window.showMainView = function(view) {
+  _currentView = view;
+  document.getElementById('dashboardView').style.display  = view === 'dashboard' ? '' : 'none';
+  document.getElementById('analyticsView').style.display  = view === 'analytics' ? '' : 'none';
+  document.getElementById('navDashboard').classList.toggle('active', view === 'dashboard');
+  document.getElementById('navAnalytics').classList.toggle('active', view === 'analytics');
+  if (view === 'analytics') renderAnalytics();
+};
+
+window.setAnalyticsPeriod = function(p) {
+  analyticsPeriod = p;
+  const ids = { month: 'apMonth', '3mo': 'ap3mo', '6mo': 'ap6mo', year: 'apYear', all: 'apAll' };
+  Object.entries(ids).forEach(([k, id]) => document.getElementById(id).classList.toggle('active', k === p));
+  renderAnalytics();
+};
+
+function getAnalyticsRange() {
+  const now = new Date();
+  if (analyticsPeriod === 'month') return getMonthRange();
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  let start;
+  if (analyticsPeriod === '3mo') {
+    start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  } else if (analyticsPeriod === '6mo') {
+    start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  } else if (analyticsPeriod === 'year') {
+    start = new Date(now.getFullYear(), 0, 1);
+  } else {
+    const allDates = [...expenses.map(e => e.date), ...income.map(e => e.date)];
+    if (!allDates.length) { start = new Date(now.getFullYear(), now.getMonth(), 1); }
+    else {
+      const d = new Date([...allDates].sort()[0] + 'T00:00:00');
+      start = new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+  }
+  start.setHours(0, 0, 0, 0);
+  return { cycleStart: start, cycleEnd: end };
+}
+
+function getAnalyticsData() {
+  const { cycleStart: start, cycleEnd: end } = getAnalyticsRange();
+  const exp = expenses.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= start && d <= end; });
+  const inc = income.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= start && d <= end; });
+  return { exp, inc, start, end };
+}
+
+function renderAnalytics() {
+  const { exp, inc, start, end } = getAnalyticsData();
+  renderAKPIs(exp, inc, start, end);
+  renderAGroupedChart(exp, inc, start, end);
+  renderADonut(exp);
+  renderADow(exp);
+  renderABalanceTrend(exp, inc, start, end);
+  renderAInsights(exp, inc, start, end);
+  renderASuggestions(exp, inc, start, end);
+}
+
+function renderAKPIs(exp, inc, start, end) {
+  const totalSpent  = exp.reduce((a, e) => a + e.amount, 0);
+  const totalIncome = inc.reduce((a, e) => a + e.amount, 0);
+  const net         = totalIncome - totalSpent;
+  const savingsRate = totalIncome > 0 ? Math.round((net / totalIncome) * 100) : null;
+  const days        = Math.max(1, Math.round((end - start) / 864e5) + 1);
+  const cats = {};
+  exp.forEach(e => { cats[e.category] = (cats[e.category] || 0) + e.amount; });
+  const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+
+  document.getElementById('kpiGrid').innerHTML = [
+    { label: 'Total Spent',     value: fmt(totalSpent),  sub: exp.length + ' transactions',                                                    cls: '' },
+    { label: 'Total Income',    value: fmt(totalIncome), sub: inc.length + ' payments',                                                         cls: 'pos' },
+    { label: 'Net Savings',     value: fmt(Math.abs(net)), sub: net >= 0 ? '↑ surplus' : '↓ deficit',                                          cls: net >= 0 ? 'pos' : 'neg' },
+    { label: 'Savings Rate',    value: savingsRate !== null ? Math.max(0, savingsRate) + '%' : '—', sub: 'of income saved',                     cls: savingsRate !== null && savingsRate >= 20 ? 'pos' : savingsRate !== null && savingsRate < 0 ? 'neg' : '' },
+    { label: 'Avg Daily Spend', value: fmt(totalSpent / days), sub: 'over ' + days + ' days',                                                  cls: '' },
+    { label: 'Top Category',    value: topCat ? topCat[0] : '—', sub: topCat ? fmt(topCat[1]) + ' spent' : 'No expenses yet',                  cls: '' },
+  ].map(k => `<div class="kpi-card ${k.cls}">
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-value">${k.value}</div>
+    <div class="kpi-sub">${k.sub}</div>
+  </div>`).join('');
+}
+
+function _aMonths(start, end) {
+  const months = [];
+  let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  const eom = new Date(end.getFullYear(), end.getMonth(), 1);
+  while (cur <= eom && months.length < 18) {
+    const showYear = months.length > 0 && cur.getFullYear() !== start.getFullYear();
+    months.push({ year: cur.getFullYear(), month: cur.getMonth(),
+      label: cur.toLocaleString('default', { month: 'short' }) + (showYear ? ' \'' + String(cur.getFullYear()).slice(2) : '') });
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+  return months;
+}
+
+function renderAGroupedChart(exp, inc, start, end) {
+  let months = _aMonths(start, end);
+  if (months.length > 12) months = months.slice(-12);
+
+  const expT = months.map(m => exp.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d.getFullYear() === m.year && d.getMonth() === m.month; }).reduce((a, e) => a + e.amount, 0));
+  const incT = months.map(m => inc.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d.getFullYear() === m.year && d.getMonth() === m.month; }).reduce((a, e) => a + e.amount, 0));
+
+  const el = document.getElementById('aChartGrouped');
+  if (expT.every(t => t === 0) && incT.every(t => t === 0)) { el.innerHTML = '<div class="chart-empty">No data for this period.</div>'; return; }
+
+  const n = months.length || 1;
+  const max = Math.max(...expT, ...incT, 1);
+  const W = 520, H = 148, padX = 10, padBot = 22, barAreaH = H - padBot - 16;
+  const slotW = (W - padX * 2) / n;
+  const bW = Math.min(slotW * 0.33, 20), gap = 2;
+
+  const bars = months.map((m, i) => {
+    const eH = Math.max((expT[i] / max) * barAreaH, expT[i] > 0 ? 2 : 0);
+    const iH = Math.max((incT[i] / max) * barAreaH, incT[i] > 0 ? 2 : 0);
+    const cx = padX + i * slotW + slotW / 2;
+    return `
+      <rect x="${(cx-bW-gap/2).toFixed(1)}" y="${(H-padBot-eH).toFixed(1)}" width="${bW.toFixed(1)}" height="${Math.max(eH,0).toFixed(1)}" rx="3" fill="var(--accent)" opacity="0.82"/>
+      <rect x="${(cx+gap/2).toFixed(1)}" y="${(H-padBot-iH).toFixed(1)}" width="${bW.toFixed(1)}" height="${Math.max(iH,0).toFixed(1)}" rx="3" fill="var(--green)" opacity="0.82"/>
+      <text x="${cx.toFixed(1)}" y="${H-5}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="DM Sans,sans-serif">${m.label}</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+    <text x="${padX}" y="12" font-size="9" fill="var(--accent)" font-family="DM Sans,sans-serif">■ Expenses</text>
+    <text x="${padX+65}" y="12" font-size="9" fill="var(--green)" font-family="DM Sans,sans-serif">■ Income</text>
+    <line x1="${padX}" y1="${H-padBot}" x2="${W-padX}" y2="${H-padBot}" stroke="var(--border)" stroke-width="1"/>
+    ${bars}
+  </svg>`;
+}
+
+function renderADonut(exp) {
+  const el = document.getElementById('aChartDonut');
+  if (!exp.length) { el.innerHTML = '<div class="chart-empty">No expenses for this period.</div>'; return; }
+
+  const cats = {};
+  exp.forEach(e => { cats[e.category] = (cats[e.category] || 0) + e.amount; });
+  const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const total = sorted.reduce((a, [, v]) => a + v, 0) || 1;
+
+  const cx = 75, cy = 72, r = 52, inner = 27;
+  let angle = -Math.PI / 2;
+  const paths = sorted.map(([name, amt]) => {
+    const color = catColor(name);
+    const theta = (amt / total) * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+    angle += theta;
+    const x2 = cx + r * Math.cos(angle), y2 = cy + r * Math.sin(angle);
+    const ix1 = cx + inner * Math.cos(angle - theta), iy1 = cy + inner * Math.sin(angle - theta);
+    const ix2 = cx + inner * Math.cos(angle), iy2 = cy + inner * Math.sin(angle);
+    const large = theta > Math.PI ? 1 : 0;
+    return `<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${ix2.toFixed(2)} ${iy2.toFixed(2)} A${inner} ${inner} 0 ${large} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)}Z" fill="${color}" opacity="0.88"/>`;
+  }).join('');
+
+  const lx = cx * 2 + 10;
+  const legend = sorted.map(([name, amt], i) => {
+    const pct = Math.round((amt / total) * 100);
+    const label = name.length > 13 ? name.slice(0, 12) + '…' : name;
+    return `<rect x="${lx}" y="${5+i*17}" width="7" height="7" rx="2" fill="${catColor(name)}"/>
+      <text x="${lx+11}" y="${13+i*17}" font-size="9.5" fill="var(--ink)" font-family="DM Sans,sans-serif">${label} ${pct}%</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 260 148" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+    ${paths}
+    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="DM Sans,sans-serif">Total</text>
+    ${legend}
+  </svg>`;
+}
+
+function renderADow(exp) {
+  const el = document.getElementById('aChartDow');
+  if (!exp.length) { el.innerHTML = '<div class="chart-empty">No data for this period.</div>'; return; }
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const totals = Array(7).fill(0);
+  exp.forEach(e => { totals[new Date(e.date + 'T12:00:00').getDay()] += e.amount; });
+  const max = Math.max(...totals, 1);
+  const W = 280, H = 128, padX = 14, padBot = 20, barAreaH = H - padBot - 10;
+  const slotW = (W - padX * 2) / 7;
+  const barW = Math.min(slotW * 0.62, 26);
+
+  const bars = dayNames.map((d, i) => {
+    const bH = Math.max((totals[i] / max) * barAreaH, totals[i] > 0 ? 2 : 0);
+    const x = padX + i * slotW + (slotW - barW) / 2;
+    const y = H - padBot - bH;
+    const isWknd = i === 0 || i === 6;
+    const lbl = totals[i] > 0 ? `<text x="${(x+barW/2).toFixed(1)}" y="${(y-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="var(--muted)" font-family="DM Sans,sans-serif">${fmtCompact(totals[i])}</text>` : '';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(bH,0).toFixed(1)}" rx="3" fill="${isWknd ? 'var(--amber)' : 'var(--accent)'}" opacity="0.78"/>
+      ${lbl}
+      <text x="${(x+barW/2).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="DM Sans,sans-serif">${d}</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+    <line x1="${padX}" y1="${H-padBot}" x2="${W-padX}" y2="${H-padBot}" stroke="var(--border)" stroke-width="1"/>
+    ${bars}
+  </svg>`;
+}
+
+function renderABalanceTrend(exp, inc, start, end) {
+  const el = document.getElementById('aChartBalance');
+  if (!exp.length && !inc.length) { el.innerHTML = '<div class="chart-empty">No data for this period.</div>'; return; }
+
+  let months = _aMonths(start, end);
+  if (months.length > 12) months = months.slice(-12);
+
+  const netByMonth = months.map(m => {
+    const e = exp.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d.getFullYear() === m.year && d.getMonth() === m.month; }).reduce((a, e) => a + e.amount, 0);
+    const i = inc.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d.getFullYear() === m.year && d.getMonth() === m.month; }).reduce((a, e) => a + e.amount, 0);
+    return i - e;
+  });
+
+  const W = 280, H = 128, padX = 14, padBot = 20, padTop = 14;
+  const n = months.length;
+  const minV = Math.min(...netByMonth, 0);
+  const maxV = Math.max(...netByMonth, 0);
+  const range = maxV - minV || 1;
+  const plotH = H - padBot - padTop;
+  const zeroY = H - padBot - ((0 - minV) / range) * plotH;
+
+  const pts = months.map((m, i) => {
+    const x = padX + (n <= 1 ? (W - padX * 2) / 2 : i * (W - padX * 2) / (n - 1));
+    const y = H - padBot - ((netByMonth[i] - minV) / range) * plotH;
+    return { x, y, v: netByMonth[i], label: m.label };
+  });
+
+  const polyline = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const dots  = pts.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${p.v >= 0 ? 'var(--green)' : 'var(--accent)'}" opacity="0.9"/>`).join('');
+  const lbls  = pts.map(p => `<text x="${p.x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="DM Sans,sans-serif">${p.label}</text>`).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+    <line x1="${padX}" y1="${zeroY.toFixed(1)}" x2="${W-padX}" y2="${zeroY.toFixed(1)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 3"/>
+    <polyline points="${polyline}" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${lbls}
+  </svg>`;
+}
+
+function renderAInsights(exp, inc, start, end) {
+  const totalSpent = exp.reduce((a, e) => a + e.amount, 0);
+  const days = Math.max(1, Math.round((end - start) / 864e5) + 1);
+  const cats = {};
+  exp.forEach(e => { cats[e.category] = (cats[e.category] || 0) + e.amount; });
+  const catSorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+  const dowTotals = Array(7).fill(0);
+  exp.forEach(e => { dowTotals[new Date(e.date + 'T12:00:00').getDay()] += e.amount; });
+  const dowNames  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const maxExp    = exp.reduce((a, e) => (!a || e.amount > a.amount) ? e : a, null);
+  const avgTx     = exp.length > 0 ? totalSpent / exp.length : 0;
+
+  const insights = [];
+
+  if (catSorted.length > 0) {
+    const [topName, topAmt] = catSorted[0];
+    const pct = totalSpent > 0 ? Math.round((topAmt / totalSpent) * 100) : 0;
+    insights.push({ icon: '🏆', title: 'Top spending category', text: `${topName} is your biggest expense at ${fmt(topAmt)} — ${pct}% of total spend.` });
+  }
+
+  if (maxExp) {
+    const dStr = new Date(maxExp.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+    insights.push({ icon: '💸', title: 'Biggest single expense', text: `"${maxExp.name}" on ${dStr} was your largest transaction at ${fmt(maxExp.amount)}.` });
+  }
+
+  if (exp.length > 3) {
+    const weekendSpend = dowTotals[0] + dowTotals[6];
+    const weekdaySpend = totalSpent - weekendSpend;
+    if (weekdaySpend > 0 && (weekendSpend / 2) > (weekdaySpend / 5) * 1.3) {
+      insights.push({ icon: '🗓', title: 'Weekend spending spike', text: `You spend more on weekends — Sat & Sun together account for ${fmt(weekendSpend)} (${Math.round((weekendSpend/totalSpent)*100)}% of total).` });
+    } else {
+      const peak = dowTotals.indexOf(Math.max(...dowTotals));
+      insights.push({ icon: '📅', title: 'Busiest spending day', text: `${dowNames[peak]} is your highest-spend day of the week at ${fmt(dowTotals[peak])} total.` });
+    }
+  }
+
+  if (exp.length > 0) {
+    insights.push({ icon: '📊', title: 'Transaction summary', text: `${exp.length} expense${exp.length !== 1 ? 's' : ''} averaging ${fmt(avgTx)} each — ${fmt(totalSpent / days)} per day over ${days} days.` });
+  }
+
+  const el = document.getElementById('insightGrid');
+  el.innerHTML = insights.length
+    ? insights.map(ins => `<div class="insight-card">
+        <div class="insight-icon">${ins.icon}</div>
+        <div class="insight-body"><div class="insight-title">${ins.title}</div><div class="insight-text">${ins.text}</div></div>
+      </div>`).join('')
+    : '<div style="color:var(--muted);font-size:0.85rem;grid-column:1/-1;padding:1rem 0;">Add some expenses to see insights.</div>';
+}
+
+function renderASuggestions(exp, inc, start, end) {
+  const totalSpent  = exp.reduce((a, e) => a + e.amount, 0);
+  const totalInc    = inc.reduce((a, e) => a + e.amount, 0);
+  const net         = totalInc - totalSpent;
+  const savingsRate = totalInc > 0 ? (net / totalInc) * 100 : null;
+  const cats = {};
+  exp.forEach(e => { cats[e.category] = (cats[e.category] || 0) + e.amount; });
+  const catSorted  = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+  const recurring  = exp.filter(e => e.recurring);
+  const suggestions = [];
+
+  if (totalInc === 0 && totalSpent > 0) {
+    suggestions.push({ icon: '💰', type: '', title: 'Track your income', text: 'No income logged for this period. Use "Record Income" to add salary, freelance pay or any money received — it makes Net Balance and savings rate meaningful.' });
+  }
+
+  if (totalInc > 0 && net < 0) {
+    suggestions.push({ icon: '⚠️', type: 'warning', title: 'Spending exceeds income', text: `You spent ${fmt(Math.abs(net))} more than you earned this period. Review your top expense categories to find where you can cut back.` });
+  } else if (savingsRate !== null && savingsRate >= 20) {
+    suggestions.push({ icon: '🌟', type: 'positive', title: 'Excellent savings rate!', text: `You're saving ${Math.round(savingsRate)}% of income — above the recommended 20% target. Outstanding financial discipline!` });
+  } else if (savingsRate !== null && savingsRate >= 0) {
+    suggestions.push({ icon: '💡', type: '', title: 'Boost your savings rate', text: `Your savings rate is ${Math.round(savingsRate)}%. Aim for 20%+ — small cuts in everyday categories can compound significantly over time.` });
+  }
+
+  if (budget > 0 && analyticsPeriod === 'month') {
+    const { cycleStart: cs, cycleEnd: ce } = getMonthRange();
+    const moSpent = expenses.filter(ex => { const d = new Date(ex.date + 'T12:00:00'); return d >= cs && d <= ce; }).reduce((a, e) => a + e.amount, 0);
+    if (moSpent > budget) {
+      suggestions.push({ icon: '🚨', type: 'warning', title: 'Over monthly budget', text: `You're ${fmt(moSpent - budget)} over your ${fmt(budget)} budget. Consider adjusting spending in your top categories.` });
+    } else if (moSpent / budget > 0.75) {
+      suggestions.push({ icon: '🔶', type: '', title: 'Approaching budget limit', text: `You've used ${Math.round((moSpent / budget) * 100)}% of your monthly budget. Pace spending carefully to stay on track.` });
+    }
+  }
+
+  if (catSorted.length > 0) {
+    const [topName, topAmt] = catSorted[0];
+    const pct = totalSpent > 0 ? (topAmt / totalSpent) * 100 : 0;
+    if (pct > 45) {
+      suggestions.push({ icon: '📌', type: '', title: `High concentration in ${topName}`, text: `${topName} is ${Math.round(pct)}% of spending. Even a 10% reduction there would noticeably improve your balance.` });
+    }
+  }
+
+  if (recurring.length > 0) {
+    const recTotal = recurring.reduce((a, e) => a + e.amount, 0);
+    suggestions.push({ icon: '🔁', type: '', title: `${recurring.length} recurring expense${recurring.length !== 1 ? 's' : ''}`, text: `Your subscriptions and recurring bills total ${fmt(recTotal)}. Review them periodically — canceling one unused subscription adds up over the year.` });
+  }
+
+  if (!suggestions.length) {
+    suggestions.push({ icon: '✨', type: 'positive', title: 'Looking good!', text: 'Log more transactions over time to receive personalized suggestions based on your actual spending patterns.' });
+  }
+
+  document.getElementById('suggestionList').innerHTML = suggestions.map(s =>
+    `<div class="suggestion-card ${s.type}">
+      <div class="suggestion-icon">${s.icon}</div>
+      <div class="suggestion-body"><div class="suggestion-title">${s.title}</div><div class="suggestion-text">${s.text}</div></div>
+    </div>`).join('');
+}
 
 // ── Init ───────────────────────────────────────────────────────
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-SE', {
