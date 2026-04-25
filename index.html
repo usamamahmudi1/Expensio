@@ -25,6 +25,8 @@
   --red-soft: #fceae6;
   --header-bg: #1a1a18;
   --header-fg: #f5f2eb;
+  --purple: #6b3fa0;
+  --purple-soft: #ede8f5;
 }
 [data-theme="dark"] {
   --ink: #e8e5de;
@@ -41,6 +43,8 @@
   --red-soft: #2a1410;
   --header-bg: #111110;
   --header-fg: #e8e5de;
+  --purple: #9b6fd0;
+  --purple-soft: #2a1a40;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -412,6 +416,39 @@ textarea { resize: vertical; min-height: 58px; }
 .income-badge { font-size: 0.65rem; background: var(--green-soft); color: var(--green); border-radius: 4px; padding: 1px 5px; font-weight: 600; flex-shrink: 0; }
 .income-amount { font-family: 'DM Serif Display', serif; font-size: 1.05rem; flex-shrink: 0; color: var(--green); }
 
+/* ── Loans ────────────────────────────────────────────────────── */
+.loan-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--purple); flex-shrink: 0; }
+.loan-badge { font-size: 0.65rem; background: var(--purple-soft); color: var(--purple); border-radius: 4px; padding: 1px 5px; font-weight: 600; flex-shrink: 0; }
+.loan-amount { font-family: 'DM Serif Display', serif; font-size: 1.05rem; flex-shrink: 0; color: var(--purple); }
+.loan-repaid-amount { font-family: 'DM Serif Display', serif; font-size: 1.05rem; flex-shrink: 0; color: var(--green); }
+
+.loan-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.loan-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; animation: fadeIn 0.2s ease; }
+.loan-item-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; cursor: pointer; transition: background 0.15s; }
+.loan-item-header:hover { background: var(--purple-soft); }
+.loan-item-info { flex: 1; min-width: 0; }
+.loan-item-name { font-weight: 500; font-size: 0.92rem; }
+.loan-item-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.loan-outstanding { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--purple); flex-shrink: 0; }
+.loan-done { font-size: 0.72rem; background: var(--green-soft); color: var(--green); border-radius: 99px; padding: 0.18rem 0.65rem; font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+.loan-progress-track { height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 0.35rem; }
+.loan-progress-fill { height: 100%; border-radius: 99px; background: var(--purple); transition: width 0.4s; }
+.loan-progress-fill.done { background: var(--green); }
+
+.loan-body { padding: 0.75rem 1rem 1rem; border-top: 1px solid var(--border); }
+.loan-repay-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.38rem 0.9rem; background: var(--purple-soft); color: var(--purple); border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.loan-repay-btn:hover { background: var(--purple); color: #fff; border-color: var(--purple); }
+.loan-repay-form { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem; }
+.loan-repay-form .form-group { margin-bottom: 0.5rem; }
+.loan-repay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+.stat-card.loan-card { background: var(--purple-soft); border-color: #c8b4e4; }
+.stat-card.loan-card .stat-value { color: var(--purple); }
+[data-theme="dark"] .stat-card.loan-card { border-color: #4a2a6a; }
+
+.ht-loan { color: var(--purple); }
+.ht-loan strong { font-weight: 600; }
+
 /* ── Voice input ─────────────────────────────────────────────── */
 .mic-btn { display: flex; align-items: center; gap: 0.35rem; }
 .listening-modal { width: min(260px, 85vw) !important; text-align: center; }
@@ -616,6 +653,7 @@ textarea { resize: vertical; min-height: 58px; }
       <div class="form-tabs">
         <button class="form-tab active" id="tabExpense" onclick="setFormMode('expense')">Add Expense</button>
         <button class="form-tab" id="tabIncome" onclick="setFormMode('income')">Record Income</button>
+        <button class="form-tab" id="tabLoan" onclick="setFormMode('loan')">🏦 Loans</button>
         <button class="form-tab-voice" onclick="startVoiceInput()" title="Add via voice">
           <svg width="11" height="14" viewBox="0 0 13 17" fill="currentColor">
             <rect x="3.5" y="0" width="6" height="9.5" rx="3"/>
@@ -717,6 +755,30 @@ textarea { resize: vertical; min-height: 58px; }
         </div>
         <button class="btn btn-primary" id="addIncBtn" onclick="addIncome()" style="background:var(--green);">Record income</button>
       </div>
+
+      <!-- Loan form -->
+      <div id="loanFormSection" style="display:none;">
+        <div style="font-size:0.8rem;color:var(--muted);background:var(--purple-soft);border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:0.9rem;line-height:1.5;">
+          Record money <strong>borrowed</strong> from someone. Repayments are tracked separately below in the Loans section.
+        </div>
+        <div class="form-group">
+          <label>Lender / Description</label>
+          <input type="text" id="loanLender" placeholder="e.g. Bank, Ali, Credit card" />
+        </div>
+        <div class="form-group">
+          <label>Total loan amount</label>
+          <input type="number" id="loanAmount" placeholder="0" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Date taken</label>
+          <input type="date" id="loanDate" />
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <textarea id="loanNotes" placeholder="Purpose, terms, etc."></textarea>
+        </div>
+        <button class="btn btn-primary" id="addLoanBtn" onclick="addLoan()" style="background:var(--purple);">Record Loan</button>
+      </div>
     </div>
 
     <div class="panel">
@@ -727,6 +789,16 @@ textarea { resize: vertical; min-height: 58px; }
       <div class="cat-list" id="catBreakdown">
         <div style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No expenses this month.</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Loans section -->
+  <div style="margin-bottom:2rem;">
+    <div class="section-header" style="margin-bottom:1rem;">
+      <div class="section-title">Loans</div>
+    </div>
+    <div class="loan-list" id="loanList">
+      <div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>
     </div>
   </div>
 
@@ -773,6 +845,7 @@ textarea { resize: vertical; min-height: 58px; }
       <button class="day-pill active" id="typeAll" onclick="setTypeFilter('all')">All</button>
       <button class="day-pill" id="typeExp" onclick="setTypeFilter('exp')">Expenses</button>
       <button class="day-pill" id="typeInc" onclick="setTypeFilter('inc')">Income</button>
+      <button class="day-pill" id="typeLoan" onclick="setTypeFilter('loan')">🏦 Loans</button>
     </div>
   </div>
   <div class="day-filter-row">
@@ -1400,6 +1473,9 @@ let defaultView     = 'month';
 let _currentView    = 'dashboard';
 let analyticsPeriod = 'month';
 let summaryPeriod   = 'month';
+let loans           = [];
+let loanRepayments  = [];
+let expandedLoanId  = null;
 
 // ── Dark mode ──────────────────────────────────────────────────
 window.toggleDark = function() {
@@ -1543,6 +1619,20 @@ function updateSummary() {
   } else {
     // Single period: exactly 3 cards, nothing else
     html = _periodCards(activePeriod);
+  }
+
+  // Outstanding debt card
+  const outstanding = getOutstandingDebt();
+  if (outstanding > 0) {
+    const activeLoans = loans.filter(l => {
+      const repaid = loanRepayments.filter(r => r.loanId === l.id).reduce((a, r) => a + r.amount, 0);
+      return repaid < l.amount;
+    }).length;
+    html += `<div class="stat-card loan-card">
+      <div class="stat-label">Outstanding Debt</div>
+      <div class="stat-value">${fmt(outstanding)}</div>
+      <div class="stat-sub">${activeLoans} active loan${activeLoans !== 1 ? 's' : ''}</div>
+    </div>`;
   }
 
   document.getElementById('summaryGrid').innerHTML = html;
@@ -1694,6 +1784,55 @@ function renderList() {
     filtInc = filtInc.filter(e => filterDays.includes(new Date(e.date + 'T12:00:00').getDay()));
   }
 
+  // ── Loan type filter: show loan events instead of expenses/income ──
+  if (typeFilter === 'loan') {
+    const loanEvts = filterLoanEvents(currentFilter);
+    const totalsEl = document.getElementById('historyTotals');
+    const borrowed  = loanEvts.filter(e => e._t === 'loan').reduce((a, e) => a + e.amount, 0);
+    const repaidAmt = loanEvts.filter(e => e._t === 'repay').reduce((a, e) => a + e.amount, 0);
+    const lnCnt = loanEvts.filter(e => e._t === 'loan').length;
+    const rpCnt = loanEvts.filter(e => e._t === 'repay').length;
+    const parts = [`<span class="ht-label">Selected:</span>`];
+    if (lnCnt > 0)  parts.push(`<span class="ht-loan">${lnCnt} loan${lnCnt !== 1 ? 's' : ''} &nbsp;<strong>+${fmt(borrowed)}</strong></span>`);
+    if (lnCnt > 0 && rpCnt > 0) parts.push(`<span class="ht-sep">|</span>`);
+    if (rpCnt > 0) parts.push(`<span class="ht-inc">${rpCnt} repayment${rpCnt !== 1 ? 's' : ''} &nbsp;<strong>-${fmt(repaidAmt)}</strong></span>`);
+    totalsEl.innerHTML = parts.join('');
+    totalsEl.style.display = loanEvts.length ? '' : 'none';
+
+    const el = document.getElementById('expenseList');
+    if (!loanEvts.length) { el.innerHTML = '<div class="empty-state">No loan entries for this period.</div>'; return; }
+    el.innerHTML = loanEvts.sort((a, b) => new Date(b.date) - new Date(a.date)).map(row => {
+      const dStr = new Date(row.date + 'T12:00:00').toLocaleDateString('en-SE', { weekday:'short', day:'numeric', month:'short' });
+      const safeId = row.id.replace(/'/g, "\\'");
+      if (row._t === 'loan') {
+        const notes = row.notes ? `<div class="expense-notes">${row.notes}</div>` : '';
+        return `<div class="expense-item">
+          <div class="loan-dot"></div>
+          <div class="expense-info">
+            <div class="expense-name"><span class="expense-name-text">${row.lender}</span><span class="loan-badge">loan taken</span></div>
+            <div class="expense-meta">${dStr}</div>
+            ${notes}
+          </div>
+          <div class="loan-amount">+${fmt(row.amount)}</div>
+        </div>`;
+      }
+      const parentLoan = loans.find(l => l.id === row.loanId);
+      const notes = row.notes ? `<div class="expense-notes">${row.notes}</div>` : '';
+      return `<div class="expense-item">
+        <div class="loan-dot" style="background:var(--green);"></div>
+        <div class="expense-info">
+          <div class="expense-name"><span class="expense-name-text">Repayment${parentLoan ? ' — ' + parentLoan.lender : ''}</span><span class="income-badge" style="background:var(--purple-soft);color:var(--purple);">repaid</span></div>
+          <div class="expense-meta">${dStr}</div>
+          ${notes}
+        </div>
+        <div class="loan-repaid-amount">-${fmt(row.amount)}</div>
+        <button class="expense-del" onclick="event.stopPropagation();deleteLoanRepayment('${safeId}')" title="Delete">✕</button>
+      </div>`;
+    }).join('');
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────
+
   const expRows = typeFilter === 'inc' ? [] : filtExp.map(e => ({ ...e, _t: 'exp' }));
   const incRows = typeFilter === 'exp' ? [] : filtInc.map(e => ({ ...e, _t: 'inc' }));
   const all     = [...expRows, ...incRows].sort((a, b) => {
@@ -1760,6 +1899,7 @@ function refresh() {
   updateCatBreakdown();
   renderChart();
   renderList();
+  renderLoanSection();
   if (_currentView === 'analytics') renderAnalytics();
 }
 
@@ -1847,6 +1987,221 @@ function startIncomeListener() {
     refresh();
   }, err => console.error('Income listener error', err));
 }
+
+// ── Loan Firestore listeners ───────────────────────────────────
+function startLoanListener() {
+  const q = query(collection(db, 'loans'), orderBy('date', 'desc'));
+  onSnapshot(q, snap => {
+    loans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    refresh();
+  }, err => console.error('Loan listener error', err));
+}
+
+function startLoanRepaymentListener() {
+  const q = query(collection(db, 'loanRepayments'), orderBy('date', 'desc'));
+  onSnapshot(q, snap => {
+    loanRepayments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    refresh();
+  }, err => console.error('Loan repayment listener error', err));
+}
+
+// ── Loan helpers ───────────────────────────────────────────────
+function getOutstandingDebt() {
+  return loans.reduce((total, loan) => {
+    const repaid = loanRepayments.filter(r => r.loanId === loan.id).reduce((a, r) => a + r.amount, 0);
+    return total + Math.max(0, loan.amount - repaid);
+  }, 0);
+}
+
+function filterLoanEvents(f) {
+  const now = new Date();
+  const loanEvts  = loans.map(l => ({ ...l, _t: 'loan' }));
+  const repayEvts = loanRepayments.map(r => ({ ...r, _t: 'repay' }));
+  return [...loanEvts, ...repayEvts].filter(e => {
+    const d = new Date(e.date + 'T12:00:00');
+    if (f === 'day')    return e.date === today();
+    if (f === 'week')   { const w = new Date(now); w.setDate(w.getDate() - 6); return d >= w; }
+    if (f === 'month')  { const { cycleStart, cycleEnd } = getMonthRange(); return d >= cycleStart && d <= cycleEnd; }
+    if (f === 'year')   return d.getFullYear() === now.getFullYear();
+    if (f === 'custom') {
+      if (!customRangeFrom || !customRangeTo) return true;
+      return d >= new Date(customRangeFrom + 'T00:00:00') && d <= new Date(customRangeTo + 'T23:59:59');
+    }
+    return true;
+  });
+}
+
+// ── Render loan section ────────────────────────────────────────
+function renderLoanSection() {
+  const el = document.getElementById('loanList');
+  if (!loans.length) {
+    el.innerHTML = '<div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>';
+    return;
+  }
+  el.innerHTML = loans.map(loan => {
+    const repaid = loanRepayments.filter(r => r.loanId === loan.id).reduce((a, r) => a + r.amount, 0);
+    const outstanding = Math.max(0, loan.amount - repaid);
+    const pct = loan.amount > 0 ? Math.min((repaid / loan.amount) * 100, 100) : 0;
+    const isDone = outstanding <= 0;
+    const dStr = new Date(loan.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+    const isExpanded = expandedLoanId === loan.id;
+    const safeId = loan.id.replace(/'/g, "\\'");
+    const metaParts = [`Taken ${dStr}`, `Total: ${fmt(loan.amount)}`];
+    if (repaid > 0) metaParts.push(`Repaid: ${fmt(repaid)}`);
+    if (loan.notes) metaParts.push(loan.notes);
+
+    let bodyHtml = '';
+    if (isExpanded) {
+      const repayments = loanRepayments.filter(r => r.loanId === loan.id).sort((a, b) => new Date(b.date) - new Date(a.date));
+      const repayList = repayments.length
+        ? repayments.map(r => {
+            const rStr = new Date(r.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+            const safeRId = r.id.replace(/'/g, "\\'");
+            const rNotes = r.notes ? ` · ${r.notes}` : '';
+            return `<div class="expense-item" style="padding:0.55rem 0.85rem;">
+              <div class="loan-dot" style="background:var(--green);width:8px;height:8px;"></div>
+              <div class="expense-info">
+                <div class="expense-name"><span class="expense-name-text">Repayment</span></div>
+                <div class="expense-meta">${rStr}${rNotes}</div>
+              </div>
+              <div class="loan-repaid-amount">-${fmt(r.amount)}</div>
+              <button class="expense-del" onclick="event.stopPropagation();deleteLoanRepayment('${safeRId}')" title="Delete">✕</button>
+            </div>`;
+          }).join('')
+        : '<div style="color:var(--muted);font-size:0.82rem;margin-bottom:0.6rem;">No repayments recorded yet.</div>';
+
+      const repayForm = !isDone ? `
+        <div class="loan-repay-form">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.6rem;">Record repayment</div>
+          <div class="loan-repay-grid">
+            <div class="form-group">
+              <label>Amount</label>
+              <input type="number" id="repayAmount_${loan.id}" placeholder="0" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="repayDate_${loan.id}" value="${today()}" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes (optional)</label>
+            <input type="text" id="repayNotes_${loan.id}" placeholder="e.g. partial payment" style="padding:0.5rem 0.75rem;font-size:0.88rem;" />
+          </div>
+          <button class="loan-repay-btn" onclick="submitRepayment('${safeId}')">Save repayment</button>
+        </div>` : '<div style="font-size:0.83rem;color:var(--green);font-weight:600;margin-top:0.5rem;">✓ Fully repaid!</div>';
+
+      bodyHtml = `<div class="loan-body">
+        <div style="margin-bottom:0.6rem;">${repayList}</div>
+        ${repayForm}
+        <div style="margin-top:0.85rem;padding-top:0.6rem;border-top:1px solid var(--border);">
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoan('${safeId}')">Delete loan</button>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="loan-item">
+      <div class="loan-item-header" onclick="toggleLoan('${safeId}')">
+        <div class="loan-dot"></div>
+        <div class="loan-item-info">
+          <div class="loan-item-name">${loan.lender}</div>
+          <div class="loan-item-meta">${metaParts.join(' · ')}</div>
+          <div class="loan-progress-track">
+            <div class="loan-progress-fill${isDone ? ' done' : ''}" style="width:${pct.toFixed(1)}%;"></div>
+          </div>
+        </div>
+        ${isDone
+          ? '<span class="loan-done">✓ Repaid</span>'
+          : `<div class="loan-outstanding">${fmt(outstanding)}</div>`}
+      </div>
+      ${bodyHtml}
+    </div>`;
+  }).join('');
+}
+
+// ── Add loan ───────────────────────────────────────────────────
+window.addLoan = async function() {
+  const lender = document.getElementById('loanLender').value.trim();
+  const amount = parseFloat(document.getElementById('loanAmount').value);
+  const date   = document.getElementById('loanDate').value;
+  const notes  = document.getElementById('loanNotes').value.trim();
+
+  if (!lender)            { showToast('Please enter a lender name.'); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid amount.'); return; }
+  if (!date)              { showToast('Please pick a date.'); return; }
+
+  const btn = document.getElementById('addLoanBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  setSyncStatus('syncing', 'Saving…');
+
+  try {
+    await addDoc(collection(db, 'loans'), { lender, amount, date, notes, createdAt: Date.now() });
+    document.getElementById('loanLender').value = '';
+    document.getElementById('loanAmount').value = '';
+    document.getElementById('loanNotes').value  = '';
+    document.getElementById('loanDate').value   = today();
+    showToast('Loan recorded!');
+  } catch(e) {
+    showToast('Error saving. Check connection.');
+    setSyncStatus('error', 'Save failed');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Record Loan';
+  }
+};
+
+// ── Delete loan ────────────────────────────────────────────────
+window.deleteLoan = async function(id) {
+  if (!confirm('Delete this loan and all its repayments?')) return;
+  setSyncStatus('syncing', 'Deleting…');
+  try {
+    const toDelete = loanRepayments.filter(r => r.loanId === id);
+    await Promise.all(toDelete.map(r => deleteDoc(doc(db, 'loanRepayments', r.id))));
+    await deleteDoc(doc(db, 'loans', id));
+    if (expandedLoanId === id) expandedLoanId = null;
+    showToast('Loan deleted.');
+  } catch(e) {
+    showToast('Error deleting.');
+    setSyncStatus('error', 'Error');
+  }
+};
+
+// ── Submit repayment ───────────────────────────────────────────
+window.submitRepayment = async function(loanId) {
+  const amount = parseFloat(document.getElementById('repayAmount_' + loanId).value);
+  const date   = document.getElementById('repayDate_' + loanId).value;
+  const notes  = document.getElementById('repayNotes_' + loanId)?.value.trim() || '';
+
+  if (!amount || amount <= 0) { showToast('Enter a valid amount.'); return; }
+  if (!date)                  { showToast('Please pick a date.'); return; }
+
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    await addDoc(collection(db, 'loanRepayments'), { loanId, amount, date, notes, createdAt: Date.now() });
+    expandedLoanId = loanId;
+    showToast('Repayment recorded!');
+  } catch(e) {
+    showToast('Error saving.');
+    setSyncStatus('error', 'Error');
+  }
+};
+
+// ── Delete loan repayment ──────────────────────────────────────
+window.deleteLoanRepayment = async function(id) {
+  if (!confirm('Delete this repayment?')) return;
+  setSyncStatus('syncing', 'Deleting…');
+  try {
+    await deleteDoc(doc(db, 'loanRepayments', id));
+    showToast('Repayment deleted.');
+  } catch(e) {
+    showToast('Error deleting.');
+    setSyncStatus('error', 'Error');
+  }
+};
+
+// ── Toggle loan expand ─────────────────────────────────────────
+window.toggleLoan = function(id) {
+  expandedLoanId = expandedLoanId === id ? null : id;
+  renderLoanSection();
+};
 
 // ── Add expense ────────────────────────────────────────────────
 window.addExpense = async function() {
@@ -1992,7 +2347,11 @@ window.setCatFilter = val => { catFilter = val; updateClearAllBtn(); renderList(
 window.setRecurringFilter = val => { showRecurring = val; updateClearAllBtn(); renderList(); };
 window.setTypeFilter = function(t) {
   typeFilter = t;
-  ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === t));
+  ['all','exp','inc','loan'].forEach(k => {
+    const id = 'type' + k.charAt(0).toUpperCase() + k.slice(1);
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', k === t);
+  });
   updateClearAllBtn();
   renderList();
 };
@@ -2031,7 +2390,10 @@ window.clearAllFilters = function() {
   document.getElementById('rangeTo').value   = '';
   document.getElementById('clearRangeBtn').style.display = 'none';
   [0,1,2,3,4,5,6].forEach(d => document.getElementById('day-' + d).classList.remove('active'));
-  ['all','exp','inc'].forEach(k => document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === 'all'));
+  ['all','exp','inc','loan'].forEach(k => {
+    const el = document.getElementById('type' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (el) el.classList.toggle('active', k === 'all');
+  });
   // Switch back to default period tab
   const tabMap = { day: 'tabDay', week: 'tabWeek', month: 'tabMonth', year: 'tabYear', all: 'tabAll' };
   currentFilter = defaultView;
@@ -2380,15 +2742,21 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function setDefaultDate() { document.getElementById('expDate').value = today(); }
+function setDefaultDate() {
+  document.getElementById('expDate').value  = today();
+  const ld = document.getElementById('loanDate');
+  if (ld) ld.value = today();
+}
 
 // ── Form mode toggle ───────────────────────────────────────────
 window.setFormMode = function(mode) {
   formMode = mode;
   document.getElementById('expenseFormSection').style.display = mode === 'expense' ? '' : 'none';
   document.getElementById('incomeFormSection').style.display  = mode === 'income'  ? '' : 'none';
+  document.getElementById('loanFormSection').style.display    = mode === 'loan'    ? '' : 'none';
   document.getElementById('tabExpense').classList.toggle('active', mode === 'expense');
   document.getElementById('tabIncome').classList.toggle('active',  mode === 'income');
+  document.getElementById('tabLoan').classList.toggle('active',    mode === 'loan');
 };
 
 // ── Add income ─────────────────────────────────────────────────
@@ -3282,6 +3650,8 @@ await initAuth();
 await loadSettings();
 startListener();
 startIncomeListener();
+startLoanListener();
+startLoanRepaymentListener();
 document.getElementById('incDate').value = today();
 </script>
 </body>
