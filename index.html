@@ -231,7 +231,8 @@ textarea { resize: vertical; min-height: 58px; }
 
 .history-totals-wrap { display: flex; align-items: stretch; gap: 0.5rem; margin-bottom: 0.75rem; }
 .history-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.55rem; flex: 1; }
-.hist-nav-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 34px; min-width: 34px; cursor: pointer; font-size: 1.2rem; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+.hist-nav-btns { display: flex; flex-direction: row; gap: 0.3rem; align-items: center; flex-shrink: 0; }
+.hist-nav-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 34px; height: 34px; cursor: pointer; font-size: 1.2rem; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
 .hist-nav-btn:hover { background: var(--border); color: var(--ink); }
 .hist-nav-btn:disabled { opacity: 0.3; cursor: default; }
 .ht-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.85rem; border-left: 3px solid var(--border); }
@@ -910,9 +911,11 @@ textarea { resize: vertical; min-height: 58px; }
   </div>
 
   <div class="history-totals-wrap" id="historyTotalsWrap" style="display:none;">
-    <button class="hist-nav-btn" id="histNavPrev" onclick="navigateDay(-1)" title="Previous day">&#8249;</button>
     <div class="history-totals" id="historyTotals"></div>
-    <button class="hist-nav-btn" id="histNavNext" onclick="navigateDay(1)" title="Next day">&#8250;</button>
+    <div class="hist-nav-btns" id="histNavBtns" style="display:none;">
+      <button class="hist-nav-btn" id="histNavPrev" onclick="navigateDay(-1)" title="Previous day">&#8249;</button>
+      <button class="hist-nav-btn" id="histNavNext" onclick="navigateDay(1)" title="Next day">&#8250;</button>
+    </div>
   </div>
   <div class="expense-list" id="expenseList"></div>
   </div><!-- /dashboardView -->
@@ -1944,8 +1947,7 @@ function renderList() {
     </div>`);
     totalsEl.innerHTML = loanCards.join('');
     document.getElementById('historyTotalsWrap').style.display = loanEvts.length ? '' : 'none';
-    document.getElementById('histNavPrev').style.display = 'none';
-    document.getElementById('histNavNext').style.display = 'none';
+    document.getElementById('histNavBtns').style.display = 'none';
 
     const el = document.getElementById('expenseList');
     if (!loanEvts.length) { el.innerHTML = '<div class="empty-state">No loan entries for this period.</div>'; return; }
@@ -2089,9 +2091,7 @@ function renderList() {
   totalsEl.innerHTML = cards.join('');
   const wrapEl = document.getElementById('historyTotalsWrap');
   wrapEl.style.display = cards.length ? '' : 'none';
-  const showDayNav = !!filterDate;
-  document.getElementById('histNavPrev').style.display = showDayNav ? '' : 'none';
-  document.getElementById('histNavNext').style.display = showDayNav ? '' : 'none';
+  document.getElementById('histNavBtns').style.display = filterDate ? '' : 'none';
   // ─────────────────────────────────────────────────────────────
 
   const el = document.getElementById('expenseList');
