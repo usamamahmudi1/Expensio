@@ -2014,11 +2014,11 @@ function renderList() {
       const netLabel   = currentFilter === 'week' ? "Week's Net" : filterDate && filterDate !== today() ? "Day's Net" : "Today's Net";
       const cycleStartStr = cycleStart.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
 
-      // Expenses
-      if (filtExp.length > 0) cards.push(`<div class="ht-card ht-exp-card">
+      // Expenses — always shown in prorated view so all 4 cards appear together
+      cards.push(`<div class="ht-card ht-exp-card">
         <div class="ht-card-label">Expenses</div>
         <div class="ht-card-value col-exp">${fmtNum(expSum)}</div>
-        <div class="ht-card-sub">${filtExp.length} entr${filtExp.length !== 1 ? 'ies' : 'y'}</div>
+        <div class="ht-card-sub">${filtExp.length > 0 ? filtExp.length + ' entr' + (filtExp.length !== 1 ? 'ies' : 'y') : 'none recorded'}</div>
       </div>`);
 
       // Est. Income
