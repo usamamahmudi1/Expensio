@@ -2466,13 +2466,14 @@ function renderLoanSection() {
 
     let bodyHtml = '';
     if (isExpanded) {
-      // ── Monthly charge section ───────────────────────────────
-      let chargeSection = '';
-      if (hasCharges && !isDone) {
-        const mc = calcMonthlyCharge(loan);
-        const chargeDue = isChargeDueThisMonth(loan.id);
-        const chargeHistory = loanCharges.filter(c => c.loanId === loan.id).sort((a, b) => new Date(b.date) - new Date(a.date));
+      const mc = calcMonthlyCharge(loan);
+      const interestAmt = mc.total;
+      const alreadyCharged = !isChargeDueThisMonth(loan.id);
 
+      // ── Interest charge history (read-only) ──────────────────
+      let chargeSection = '';
+      if (hasCharges) {
+        const chargeHistory = loanCharges.filter(c => c.loanId === loan.id).sort((a, b) => new Date(b.date) - new Date(a.date));
         const chargeHistoryHtml = chargeHistory.length
           ? chargeHistory.map(c => {
               const cStr = new Date(c.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
@@ -2481,45 +2482,18 @@ function renderLoanSection() {
               return `<div class="loan-charge-item">
                 <div class="loan-dot" style="background:var(--amber);width:8px;height:8px;"></div>
                 <div class="expense-info">
-                  <div class="expense-name"><span class="expense-name-text">Monthly charge</span></div>
+                  <div class="expense-name"><span class="expense-name-text">Interest charge</span></div>
                   <div class="expense-meta">${cStr}${cNotes}</div>
                 </div>
                 <div class="loan-charge-amount">+${fmt(c.amount)}</div>
                 <button class="expense-del" onclick="event.stopPropagation();deleteLoanCharge('${safeCId}')" title="Delete">✕</button>
               </div>`;
             }).join('')
-          : '<div style="color:var(--muted);font-size:0.82rem;">No charges logged yet.</div>';
-
-        const logForm = chargeDue ? `
-          <div class="loan-repay-form" style="background:var(--amber-soft);border-color:var(--border);">
-            <div style="font-size:0.75rem;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.55rem;">
-              Log this month's charge
-              <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">— est. ${fmt(mc.total)}</span>
-            </div>
-            <div class="loan-repay-grid">
-              <div class="form-group">
-                <label>Amount</label>
-                <input type="number" id="chargeAmount_${loan.id}" value="${mc.total}" min="0" step="0.01" />
-              </div>
-              <div class="form-group">
-                <label>Date</label>
-                <input type="date" id="chargeDate_${loan.id}" value="${today()}" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Notes (optional)</label>
-              <input type="text" id="chargeNotes_${loan.id}" placeholder="e.g. interest for April" style="padding:0.5rem 0.75rem;font-size:0.88rem;" />
-            </div>
-            <button class="loan-repay-btn" style="background:var(--amber);color:#fff;border-color:var(--amber);" onclick="logMonthlyCharge('${safeId}')">Log charge</button>
-          </div>` : `<div style="font-size:0.8rem;color:var(--green);font-weight:600;padding:0.4rem 0;">✓ Charge already logged this month</div>`;
-
-        chargeSection = `
-          <div class="loan-section-divider">Monthly charges</div>
-          ${chargeHistoryHtml}
-          ${logForm}`;
+          : '<div style="color:var(--muted);font-size:0.82rem;">No interest charges logged yet.</div>';
+        chargeSection = `<div class="loan-section-divider">Interest charges</div>${chargeHistoryHtml}`;
       }
 
-      // ── Repayment section ────────────────────────────────────
+      // ── Repayment history ────────────────────────────────────
       const repayments = loanRepayments.filter(r => r.loanId === loan.id).sort((a, b) => new Date(b.date) - new Date(a.date));
       const repayListHtml = repayments.length
         ? repayments.map(r => {
@@ -2538,31 +2512,49 @@ function renderLoanSection() {
           }).join('')
         : '<div style="color:var(--muted);font-size:0.82rem;">No repayments recorded yet.</div>';
 
-      const repayForm = !isDone ? `
+      // ── Unified payment form ─────────────────────────────────
+      const alreadyChargedWarning = hasCharges && alreadyCharged
+        ? `<div style="font-size:0.73rem;color:var(--amber);margin-bottom:0.55rem;padding:0.4rem 0.65rem;background:var(--amber-soft);border-radius:6px;">⚠ Interest already logged this month — choosing Payment + Interest will add a second charge.</div>`
+        : '';
+
+      const payForm = !isDone ? `
         <div class="loan-repay-form">
-          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.6rem;">Record repayment</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.75rem;">Record Payment</div>
+          <div style="display:flex;gap:0;margin-bottom:0.9rem;background:var(--paper);border:1px solid var(--border);border-radius:9px;padding:0.2rem;">
+            <label id="payModeOnlyLbl_${loan.id}" onclick="onRepayMode('${safeId}')" style="flex:1;text-align:center;padding:0.4rem 0.5rem;border-radius:7px;cursor:pointer;font-size:0.82rem;font-weight:600;background:var(--ink);color:var(--paper);transition:all 0.15s;user-select:none;">
+              <input type="radio" name="repayMode_${loan.id}" value="only" style="display:none;" checked />Payment only
+            </label>
+            <label id="payModeWithLbl_${loan.id}" onclick="onRepayMode('${safeId}')" style="flex:1;text-align:center;padding:0.4rem 0.5rem;border-radius:7px;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--muted);transition:all 0.15s;user-select:none;">
+              <input type="radio" name="repayMode_${loan.id}" value="withInterest" style="display:none;" />Payment + Interest
+            </label>
+          </div>
           <div class="loan-repay-grid">
             <div class="form-group">
-              <label>Amount</label>
-              <input type="number" id="repayAmount_${loan.id}" placeholder="0" min="0" step="0.01" />
+              <label id="payAmountLbl_${loan.id}">Amount paid toward loan</label>
+              <input type="number" id="repayAmount_${loan.id}" placeholder="0" min="0" step="0.01" oninput="onRepayAmountChange('${safeId}',${interestAmt})" />
             </div>
             <div class="form-group">
               <label>Date</label>
               <input type="date" id="repayDate_${loan.id}" value="${today()}" />
             </div>
           </div>
+          <div id="repayBreakdown_${loan.id}" style="display:none;background:var(--amber-soft);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;margin-bottom:0.75rem;font-size:0.82rem;line-height:1.85;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Interest (est.)</span><strong style="color:var(--amber);" id="repayInterestPart_${loan.id}">${fmt(interestAmt)}</strong></div>
+            <div style="display:flex;justify-content:space-between;border-top:1px dashed var(--border);margin-top:0.35rem;padding-top:0.35rem;"><span style="color:var(--muted);">Principal repaid</span><strong style="color:var(--green);" id="repayPrincipalPart_${loan.id}">—</strong></div>
+          </div>
+          ${alreadyChargedWarning}
           <div class="form-group">
             <label>Notes (optional)</label>
-            <input type="text" id="repayNotes_${loan.id}" placeholder="e.g. partial payment" style="padding:0.5rem 0.75rem;font-size:0.88rem;" />
+            <input type="text" id="repayNotes_${loan.id}" placeholder="e.g. April instalment" style="padding:0.5rem 0.75rem;font-size:0.88rem;" />
           </div>
-          <button class="loan-repay-btn" onclick="submitRepayment('${safeId}')">Save repayment</button>
+          <button class="loan-repay-btn" onclick="submitPayment('${safeId}',${interestAmt})">Record Payment</button>
         </div>` : '<div style="font-size:0.83rem;color:var(--green);font-weight:600;margin-top:0.5rem;">✓ Fully repaid!</div>';
 
       bodyHtml = `<div class="loan-body">
         ${chargeSection}
         <div class="loan-section-divider">Repayments</div>
         <div style="margin-bottom:0.5rem;">${repayListHtml}</div>
-        ${repayForm}
+        ${payForm}
         <div style="margin-top:0.85rem;padding-top:0.6rem;border-top:1px solid var(--border);">
           <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoan('${safeId}')">Delete loan</button>
         </div>
@@ -2648,20 +2640,53 @@ window.deleteLoan = async function(id) {
   }
 };
 
-// ── Submit repayment ───────────────────────────────────────────
-window.submitRepayment = async function(loanId) {
-  const amount = parseFloat(document.getElementById('repayAmount_' + loanId).value);
-  const date   = document.getElementById('repayDate_' + loanId).value;
+// ── Payment mode toggle ────────────────────────────────────────
+window.onRepayMode = function(loanId) {
+  setTimeout(() => {
+    const mode = document.querySelector(`input[name="repayMode_${loanId}"]:checked`)?.value || 'only';
+    const breakdown = document.getElementById('repayBreakdown_' + loanId);
+    const amtLbl    = document.getElementById('payAmountLbl_' + loanId);
+    const onlyLbl   = document.getElementById('payModeOnlyLbl_' + loanId);
+    const withLbl   = document.getElementById('payModeWithLbl_' + loanId);
+    if (!breakdown) return;
+    const isWith = mode === 'withInterest';
+    breakdown.style.display = isWith ? '' : 'none';
+    if (amtLbl) amtLbl.textContent = isWith ? 'Total amount paid (incl. interest)' : 'Amount paid toward loan';
+    if (onlyLbl) { onlyLbl.style.background = isWith ? '' : 'var(--ink)'; onlyLbl.style.color = isWith ? 'var(--muted)' : 'var(--paper)'; }
+    if (withLbl) { withLbl.style.background = isWith ? 'var(--ink)' : ''; withLbl.style.color = isWith ? 'var(--paper)' : 'var(--muted)'; }
+  }, 0);
+};
+
+window.onRepayAmountChange = function(loanId, interestAmt) {
+  const total = parseFloat(document.getElementById('repayAmount_' + loanId)?.value) || 0;
+  const principal = total - interestAmt;
+  const pEl = document.getElementById('repayPrincipalPart_' + loanId);
+  if (pEl) pEl.textContent = principal > 0 ? fmtNum(principal) : '—';
+};
+
+// ── Submit payment (payment only OR payment + interest) ────────
+window.submitPayment = async function(loanId, interestAmt) {
+  const amount = parseFloat(document.getElementById('repayAmount_' + loanId)?.value);
+  const date   = document.getElementById('repayDate_' + loanId)?.value;
   const notes  = document.getElementById('repayNotes_' + loanId)?.value.trim() || '';
+  const mode   = document.querySelector(`input[name="repayMode_${loanId}"]:checked`)?.value || 'only';
 
   if (!amount || amount <= 0) { showToast('Enter a valid amount.'); return; }
   if (!date)                  { showToast('Please pick a date.'); return; }
 
   setSyncStatus('syncing', 'Saving…');
   try {
-    await addDoc(collection(db, 'loanRepayments'), { loanId, amount, date, notes, createdAt: Date.now() });
+    if (mode === 'withInterest') {
+      const principal = amount - interestAmt;
+      if (principal <= 0) { showToast(`Total must exceed interest (${fmtNum(interestAmt)}).`); setSyncStatus('synced', 'Saved'); return; }
+      await addDoc(collection(db, 'loanCharges'),    { loanId, amount: interestAmt, date, notes: notes || 'Interest', createdAt: Date.now() });
+      await addDoc(collection(db, 'loanRepayments'), { loanId, amount: principal,   date, notes: notes || 'Principal', createdAt: Date.now() });
+      showToast(`Payment recorded — interest ${fmtNum(interestAmt)}, principal ${fmtNum(principal)}`);
+    } else {
+      await addDoc(collection(db, 'loanRepayments'), { loanId, amount, date, notes, createdAt: Date.now() });
+      showToast('Payment recorded!');
+    }
     expandedLoanId = loanId;
-    showToast('Repayment recorded!');
   } catch(e) {
     showToast('Error saving.');
     setSyncStatus('error', 'Error');
@@ -2677,26 +2702,6 @@ window.deleteLoanRepayment = async function(id) {
     showToast('Repayment deleted.');
   } catch(e) {
     showToast('Error deleting.');
-    setSyncStatus('error', 'Error');
-  }
-};
-
-// ── Log monthly charge ─────────────────────────────────────────
-window.logMonthlyCharge = async function(loanId) {
-  const amount = parseFloat(document.getElementById('chargeAmount_' + loanId)?.value);
-  const date   = document.getElementById('chargeDate_' + loanId)?.value;
-  const notes  = document.getElementById('chargeNotes_' + loanId)?.value.trim() || '';
-
-  if (!amount || amount <= 0) { showToast('Enter a valid charge amount.'); return; }
-  if (!date)                  { showToast('Please pick a date.'); return; }
-
-  setSyncStatus('syncing', 'Saving…');
-  try {
-    await addDoc(collection(db, 'loanCharges'), { loanId, amount, date, notes, createdAt: Date.now() });
-    expandedLoanId = loanId;
-    showToast('Charge logged!');
-  } catch(e) {
-    showToast('Error saving.');
     setSyncStatus('error', 'Error');
   }
 };
