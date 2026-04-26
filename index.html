@@ -1617,6 +1617,8 @@ let loanRepayments         = [];
 let loanCharges            = [];
 let expandedLoanId         = null;
 let editingLoanId          = null;
+let editingRepayId         = null;
+let editingChargeId        = null;
 let loanSubTab             = 'active'; // 'active' | 'repaid'
 let _loanSectionOpen       = false;
 let _loanReminderDismissed = false;
@@ -2503,13 +2505,33 @@ function renderLoanSection() {
               const cStr = new Date(c.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
               const safeCId = c.id.replace(/'/g, "\\'");
               const cNotes = c.notes ? ` · ${c.notes}` : '';
-              return `<div class="loan-charge-item">
-                <div class="loan-dot" style="background:var(--amber);width:8px;height:8px;"></div>
-                <div class="expense-info">
+              const isEditingC = editingChargeId === c.id;
+              const editRowC = isEditingC ? `
+                <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);align-items:flex-end;">
+                  <div class="form-group" style="margin:0;flex:1;min-width:90px;">
+                    <label style="font-size:0.72rem;">Amount</label>
+                    <input type="number" id="editChargeAmt_${c.id}" value="${c.amount}" min="0" step="0.01" style="padding:0.4rem 0.6rem;font-size:0.85rem;" />
+                  </div>
+                  <div class="form-group" style="margin:0;flex:1;min-width:110px;">
+                    <label style="font-size:0.72rem;">Date</label>
+                    <input type="date" id="editChargeDate_${c.id}" value="${c.date}" style="padding:0.4rem 0.6rem;font-size:0.85rem;" />
+                  </div>
+                  <div class="form-group" style="margin:0;flex:2;min-width:130px;">
+                    <label style="font-size:0.72rem;">Notes</label>
+                    <input type="text" id="editChargeNotes_${c.id}" value="${(c.notes||'').replace(/"/g,'&quot;')}" placeholder="optional" style="padding:0.4rem 0.6rem;font-size:0.85rem;" />
+                  </div>
+                  <button class="loan-repay-btn" style="background:var(--amber);padding:0.4rem 0.85rem;font-size:0.8rem;" onclick="saveChargeEdit('${safeCId}')">Save</button>
+                  <button class="loan-repay-btn" style="background:transparent;color:var(--muted);border-color:var(--border);padding:0.4rem 0.7rem;font-size:0.8rem;" onclick="cancelChargeEdit()">Cancel</button>
+                </div>` : '';
+              return `<div class="loan-charge-item" style="flex-wrap:wrap;">
+                <div class="loan-dot" style="background:var(--amber);width:8px;height:8px;flex-shrink:0;"></div>
+                <div class="expense-info" style="flex:1;min-width:0;">
                   <div class="expense-name"><span class="expense-name-text">Interest charge</span></div>
                   <div class="expense-meta">${cStr}${cNotes}</div>
+                  ${editRowC}
                 </div>
                 <div class="loan-charge-amount">+${fmt(c.amount)}</div>
+                <button class="expense-del" style="color:var(--muted);" onclick="event.stopPropagation();openChargeEdit('${safeCId}')" title="Edit">✎</button>
                 <button class="expense-del" onclick="event.stopPropagation();deleteLoanCharge('${safeCId}')" title="Delete">✕</button>
               </div>`;
             }).join('')
@@ -2524,13 +2546,33 @@ function renderLoanSection() {
             const rStr = new Date(r.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
             const safeRId = r.id.replace(/'/g, "\\'");
             const rNotes = r.notes ? ` · ${r.notes}` : '';
-            return `<div class="expense-item" style="padding:0.55rem 0.85rem;">
-              <div class="loan-dot" style="background:var(--green);width:8px;height:8px;"></div>
-              <div class="expense-info">
+            const isEditingR = editingRepayId === r.id;
+            const editRowR = isEditingR ? `
+              <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);align-items:flex-end;">
+                <div class="form-group" style="margin:0;flex:1;min-width:90px;">
+                  <label style="font-size:0.72rem;">Amount</label>
+                  <input type="number" id="editRepayAmt_${r.id}" value="${r.amount}" min="0" step="0.01" style="padding:0.4rem 0.6rem;font-size:0.85rem;" />
+                </div>
+                <div class="form-group" style="margin:0;flex:1;min-width:110px;">
+                  <label style="font-size:0.72rem;">Date</label>
+                  <input type="date" id="editRepayDate_${r.id}" value="${r.date}" style="padding:0.4rem 0.6rem;font-size:0.85rem;" />
+                </div>
+                <div class="form-group" style="margin:0;flex:2;min-width:130px;">
+                  <label style="font-size:0.72rem;">Notes</label>
+                  <input type="text" id="editRepayNotes_${r.id}" value="${(r.notes||'').replace(/"/g,'&quot;')}" placeholder="optional" style="padding:0.4rem 0.6rem;font-size:0.85rem;" />
+                </div>
+                <button class="loan-repay-btn" style="background:var(--green);padding:0.4rem 0.85rem;font-size:0.8rem;" onclick="saveRepayEdit('${safeRId}')">Save</button>
+                <button class="loan-repay-btn" style="background:transparent;color:var(--muted);border-color:var(--border);padding:0.4rem 0.7rem;font-size:0.8rem;" onclick="cancelRepayEdit()">Cancel</button>
+              </div>` : '';
+            return `<div class="expense-item" style="padding:0.55rem 0.85rem;flex-wrap:wrap;">
+              <div class="loan-dot" style="background:var(--green);width:8px;height:8px;flex-shrink:0;"></div>
+              <div class="expense-info" style="flex:1;min-width:0;">
                 <div class="expense-name"><span class="expense-name-text">Repayment</span></div>
                 <div class="expense-meta">${rStr}${rNotes}</div>
+                ${editRowR}
               </div>
               <div class="loan-repaid-amount">-${fmt(r.amount)}</div>
+              <button class="expense-del" style="color:var(--muted);" onclick="event.stopPropagation();openRepayEdit('${safeRId}')" title="Edit">✎</button>
               <button class="expense-del" onclick="event.stopPropagation();deleteLoanRepayment('${safeRId}')" title="Delete">✕</button>
             </div>`;
           }).join('')
@@ -2816,30 +2858,66 @@ window.submitPayment = async function(loanId, interestAmt) {
   }
 };
 
-// ── Delete loan repayment ──────────────────────────────────────
+// ── Edit / delete repayments ───────────────────────────────────
+window.openRepayEdit = function(id) {
+  editingRepayId = editingRepayId === id ? null : id;
+  renderLoanSection();
+};
+window.cancelRepayEdit = function() {
+  editingRepayId = null;
+  renderLoanSection();
+};
+window.saveRepayEdit = async function(id) {
+  const amount = parseFloat(document.getElementById('editRepayAmt_' + id)?.value);
+  const date   = document.getElementById('editRepayDate_' + id)?.value;
+  const notes  = document.getElementById('editRepayNotes_' + id)?.value.trim() || '';
+  if (!amount || amount <= 0) { showToast('Enter a valid amount.'); return; }
+  if (!date)                  { showToast('Please pick a date.'); return; }
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    await updateDoc(doc(db, 'loanRepayments', id), { amount, date, notes });
+    editingRepayId = null;
+    showToast('Repayment updated!');
+  } catch(e) { showToast('Error saving.'); setSyncStatus('error', 'Error'); }
+};
 window.deleteLoanRepayment = async function(id) {
   if (!confirm('Delete this repayment?')) return;
   setSyncStatus('syncing', 'Deleting…');
   try {
     await deleteDoc(doc(db, 'loanRepayments', id));
     showToast('Repayment deleted.');
-  } catch(e) {
-    showToast('Error deleting.');
-    setSyncStatus('error', 'Error');
-  }
+  } catch(e) { showToast('Error deleting.'); setSyncStatus('error', 'Error'); }
 };
 
-// ── Delete loan charge ─────────────────────────────────────────
+// ── Edit / delete interest charges ─────────────────────────────
+window.openChargeEdit = function(id) {
+  editingChargeId = editingChargeId === id ? null : id;
+  renderLoanSection();
+};
+window.cancelChargeEdit = function() {
+  editingChargeId = null;
+  renderLoanSection();
+};
+window.saveChargeEdit = async function(id) {
+  const amount = parseFloat(document.getElementById('editChargeAmt_' + id)?.value);
+  const date   = document.getElementById('editChargeDate_' + id)?.value;
+  const notes  = document.getElementById('editChargeNotes_' + id)?.value.trim() || '';
+  if (!amount || amount <= 0) { showToast('Enter a valid amount.'); return; }
+  if (!date)                  { showToast('Please pick a date.'); return; }
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    await updateDoc(doc(db, 'loanCharges', id), { amount, date, notes });
+    editingChargeId = null;
+    showToast('Charge updated!');
+  } catch(e) { showToast('Error saving.'); setSyncStatus('error', 'Error'); }
+};
 window.deleteLoanCharge = async function(id) {
   if (!confirm('Delete this charge entry?')) return;
   setSyncStatus('syncing', 'Deleting…');
   try {
     await deleteDoc(doc(db, 'loanCharges', id));
     showToast('Charge deleted.');
-  } catch(e) {
-    showToast('Error deleting.');
-    setSyncStatus('error', 'Error');
-  }
+  } catch(e) { showToast('Error deleting.'); setSyncStatus('error', 'Error'); }
 };
 
 // ── Update loan charge fields visibility ───────────────────────
@@ -2853,7 +2931,10 @@ window.updateLoanChargeFields = function() {
 
 // ── Toggle loan expand ─────────────────────────────────────────
 window.toggleLoan = function(id) {
-  expandedLoanId = expandedLoanId === id ? null : id;
+  expandedLoanId  = expandedLoanId === id ? null : id;
+  editingRepayId  = null;
+  editingChargeId = null;
+  editingLoanId   = null;
   renderLoanSection();
 };
 
@@ -2865,9 +2946,11 @@ window.toggleIncomeVisibility = function() {
 };
 
 window.setLoanTab = function(tab) {
-  loanSubTab = tab;
-  expandedLoanId = null;
-  editingLoanId  = null;
+  loanSubTab      = tab;
+  expandedLoanId  = null;
+  editingLoanId   = null;
+  editingRepayId  = null;
+  editingChargeId = null;
   renderLoanSection();
 };
 
