@@ -495,6 +495,50 @@ textarea { resize: vertical; min-height: 58px; }
 .main-nav-btn.active { background: var(--ink); color: var(--paper); }
 .main-nav-btn:hover:not(.active) { background: var(--border); color: var(--ink); }
 
+/* ── Shopping list ───────────────────────────────────────────── */
+.shop-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+.shop-title { font-family: 'DM Serif Display', serif; font-size: 1.2rem; }
+.shop-stats { font-size: 0.78rem; color: var(--muted); }
+.shop-add-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.shop-add-bar input, .shop-add-bar select { font-family: 'DM Sans', sans-serif; }
+.shop-name-input { flex: 1; min-width: 140px; padding: 0.6rem 0.85rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 0.88rem; }
+.shop-name-input:focus { outline: none; border-color: var(--accent); }
+.shop-qty-input { width: 70px; padding: 0.6rem 0.7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 0.88rem; }
+.shop-qty-input:focus { outline: none; border-color: var(--accent); }
+.shop-pri-select { padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 0.85rem; cursor: pointer; }
+.shop-pri-select:focus { outline: none; border-color: var(--accent); }
+.shop-add-btn { padding: 0.6rem 1.2rem; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+.shop-add-btn:hover { opacity: 0.88; }
+.shop-section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 1.1rem 0 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+.shop-item { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; transition: opacity 0.2s; }
+.shop-item.done-item { opacity: 0.5; }
+.shop-item.done-item .shop-item-name { text-decoration: line-through; }
+.shop-checkbox { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, border-color 0.15s; }
+.shop-checkbox.checked { background: var(--green); border-color: var(--green); }
+.shop-checkbox.checked::after { content: '✓'; font-size: 0.75rem; color: #fff; font-weight: 700; }
+.shop-item-body { flex: 1; min-width: 0; }
+.shop-item-name { font-size: 0.9rem; font-weight: 500; color: var(--ink); word-break: break-word; }
+.shop-item-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem; flex-wrap: wrap; }
+.shop-item-qty { font-size: 0.75rem; color: var(--muted); }
+.shop-pri-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 99px; }
+.shop-pri-badge.high { background: var(--red-soft); color: var(--accent); }
+.shop-pri-badge.medium { background: var(--amber-soft); color: var(--amber); }
+.shop-pri-badge.low { background: var(--green-soft); color: var(--green); }
+.shop-item-actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.shop-action-btn { background: none; border: 1px solid var(--border); border-radius: 7px; padding: 0.28rem 0.55rem; font-size: 0.78rem; cursor: pointer; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: background 0.12s, color 0.12s; }
+.shop-action-btn:hover { background: var(--border); color: var(--ink); }
+.shop-action-btn.del:hover { background: var(--red-soft); color: var(--accent); border-color: var(--accent); }
+.shop-empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.88rem; }
+.shop-edit-row { display: none; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px solid var(--border); align-items: center; }
+.shop-edit-row.open { display: flex; }
+.shop-edit-name { flex: 1; min-width: 120px; padding: 0.45rem 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; }
+.shop-edit-qty { width: 65px; padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; }
+.shop-edit-pri { padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; cursor: pointer; }
+.shop-save-btn { padding: 0.45rem 1rem; border: none; border-radius: 8px; background: var(--green); color: #fff; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.shop-cancel-btn { padding: 0.45rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; cursor: pointer; }
+.shop-clear-done { padding: 0.38rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; cursor: pointer; transition: background 0.12s; }
+.shop-clear-done:hover { background: var(--red-soft); color: var(--accent); border-color: var(--accent); }
+
 /* ── Analytics tab ───────────────────────────────────────────── */
 .a-period-bar { display: flex; gap: 0.4rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
 .a-period-btn { padding: 0.38rem 1rem; border: 1px solid var(--border); border-radius: 99px; font-size: 0.82rem; font-weight: 500; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
@@ -636,6 +680,7 @@ textarea { resize: vertical; min-height: 58px; }
   <div class="main-nav">
     <button class="main-nav-btn active" id="navDashboard" onclick="showMainView('dashboard')">Dashboard</button>
     <button class="main-nav-btn" id="navAnalytics" onclick="showMainView('analytics')">📈 Analytics</button>
+    <button class="main-nav-btn" id="navShopping" onclick="showMainView('shopping')">🛒 Shopping</button>
   </div>
 
   <div id="dashboardView">
@@ -956,6 +1001,29 @@ textarea { resize: vertical; min-height: 58px; }
     <div class="a-section-title">Smart Suggestions</div>
     <div class="suggestion-list" id="suggestionList"></div>
   </div><!-- /analyticsView -->
+
+  <div id="shoppingView" style="display:none;">
+    <div class="shop-header">
+      <div class="shop-title">Shopping List</div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="shop-stats" id="shopStats"></span>
+        <button class="shop-clear-done" id="shopClearDoneBtn" onclick="clearDoneItems()" style="display:none;">Clear bought</button>
+      </div>
+    </div>
+
+    <div class="shop-add-bar">
+      <input type="text" class="shop-name-input" id="shopNameInput" placeholder="Item name…" onkeydown="if(event.key==='Enter')addShopItem()" />
+      <input type="text" class="shop-qty-input" id="shopQtyInput" placeholder="Qty" onkeydown="if(event.key==='Enter')addShopItem()" />
+      <select class="shop-pri-select" id="shopPriSelect">
+        <option value="medium">Medium</option>
+        <option value="high">High priority</option>
+        <option value="low">Low priority</option>
+      </select>
+      <button class="shop-add-btn" onclick="addShopItem()">+ Add</button>
+    </div>
+
+    <div id="shopList"></div>
+  </div><!-- /shoppingView -->
 
 </div>
 
@@ -3798,14 +3866,137 @@ window.guideNav = function(dir) {
   _renderGuideCard();
 };
 
+// ── Shopping List ───────────────────────────────────────────────
+
+let shoppingItems = [];
+
+function startShoppingListener() {
+  const q = query(collection(db, 'shoppingList'), orderBy('createdAt', 'asc'));
+  onSnapshot(q, snap => {
+    shoppingItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderShopList();
+  });
+}
+
+const PRI_ORDER = { high: 0, medium: 1, low: 2 };
+
+function renderShopList() {
+  const undone = shoppingItems.filter(i => !i.done).sort((a, b) => PRI_ORDER[a.priority] - PRI_ORDER[b.priority]);
+  const done   = shoppingItems.filter(i => i.done);
+  const total  = shoppingItems.length;
+  const doneCount = done.length;
+
+  document.getElementById('shopStats').textContent = total ? `${doneCount}/${total} bought` : '';
+  document.getElementById('shopClearDoneBtn').style.display = doneCount ? '' : 'none';
+
+  if (!total) {
+    document.getElementById('shopList').innerHTML = '<div class="shop-empty">Your shopping list is empty.<br>Add items above to get started.</div>';
+    return;
+  }
+
+  let html = '';
+  if (undone.length) {
+    html += `<div class="shop-section-label">To buy · ${undone.length} item${undone.length !== 1 ? 's' : ''}</div>`;
+    undone.forEach(item => { html += buildShopItemHTML(item); });
+  }
+  if (done.length) {
+    html += `<div class="shop-section-label" style="margin-top:1.4rem;">Bought · ${done.length}</div>`;
+    done.forEach(item => { html += buildShopItemHTML(item); });
+  }
+  document.getElementById('shopList').innerHTML = html;
+}
+
+function buildShopItemHTML(item) {
+  const priLabel = { high: 'High', medium: 'Medium', low: 'Low' }[item.priority] || 'Medium';
+  const priCls   = item.priority || 'medium';
+  const doneClass = item.done ? ' done-item' : '';
+  const checkCls  = item.done ? ' checked' : '';
+  const qty = item.qty ? `<span class="shop-item-qty">× ${item.qty}</span>` : '';
+  return `
+  <div class="shop-item${doneClass}" id="shopItem-${item.id}">
+    <div class="shop-checkbox${checkCls}" onclick="toggleShopItem('${item.id}',${!item.done})"></div>
+    <div class="shop-item-body">
+      <div class="shop-item-name">${escHtml(item.name)}</div>
+      <div class="shop-item-meta">
+        ${qty}
+        <span class="shop-pri-badge ${priCls}">${priLabel}</span>
+      </div>
+      <div class="shop-edit-row" id="shopEditRow-${item.id}">
+        <input class="shop-edit-name" id="shopEditName-${item.id}" value="${escHtml(item.name)}" placeholder="Item name" />
+        <input class="shop-edit-qty" id="shopEditQty-${item.id}" value="${escHtml(item.qty || '')}" placeholder="Qty" />
+        <select class="shop-edit-pri" id="shopEditPri-${item.id}">
+          <option value="high" ${item.priority==='high'?'selected':''}>High</option>
+          <option value="medium" ${item.priority==='medium'||!item.priority?'selected':''}>Medium</option>
+          <option value="low" ${item.priority==='low'?'selected':''}>Low</option>
+        </select>
+        <button class="shop-save-btn" onclick="saveShopItem('${item.id}')">Save</button>
+        <button class="shop-cancel-btn" onclick="cancelShopEdit('${item.id}')">Cancel</button>
+      </div>
+    </div>
+    <div class="shop-item-actions">
+      <button class="shop-action-btn" onclick="openShopEdit('${item.id}')" title="Edit">✎</button>
+      <button class="shop-action-btn del" onclick="deleteShopItem('${item.id}')" title="Delete">✕</button>
+    </div>
+  </div>`;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.addShopItem = async function() {
+  const nameEl = document.getElementById('shopNameInput');
+  const name = nameEl.value.trim();
+  if (!name) { nameEl.focus(); return; }
+  const qty      = document.getElementById('shopQtyInput').value.trim();
+  const priority = document.getElementById('shopPriSelect').value;
+  await addDoc(collection(db, 'shoppingList'), { name, qty, priority, done: false, createdAt: Date.now() });
+  nameEl.value = '';
+  document.getElementById('shopQtyInput').value = '';
+  nameEl.focus();
+};
+
+window.toggleShopItem = async function(id, done) {
+  await updateDoc(doc(db, 'shoppingList', id), { done });
+};
+
+window.deleteShopItem = async function(id) {
+  await deleteDoc(doc(db, 'shoppingList', id));
+};
+
+window.openShopEdit = function(id) {
+  document.querySelectorAll('.shop-edit-row.open').forEach(el => el.classList.remove('open'));
+  document.getElementById('shopEditRow-' + id).classList.add('open');
+  document.getElementById('shopEditName-' + id).focus();
+};
+
+window.cancelShopEdit = function(id) {
+  document.getElementById('shopEditRow-' + id).classList.remove('open');
+};
+
+window.saveShopItem = async function(id) {
+  const name = document.getElementById('shopEditName-' + id).value.trim();
+  if (!name) return;
+  const qty      = document.getElementById('shopEditQty-' + id).value.trim();
+  const priority = document.getElementById('shopEditPri-' + id).value;
+  await updateDoc(doc(db, 'shoppingList', id), { name, qty, priority });
+};
+
+window.clearDoneItems = async function() {
+  const done = shoppingItems.filter(i => i.done);
+  await Promise.all(done.map(i => deleteDoc(doc(db, 'shoppingList', i.id))));
+};
+
 // ── Analytics ──────────────────────────────────────────────────
 
 window.showMainView = function(view) {
   _currentView = view;
   document.getElementById('dashboardView').style.display  = view === 'dashboard' ? '' : 'none';
   document.getElementById('analyticsView').style.display  = view === 'analytics' ? '' : 'none';
+  document.getElementById('shoppingView').style.display   = view === 'shopping'  ? '' : 'none';
   document.getElementById('navDashboard').classList.toggle('active', view === 'dashboard');
   document.getElementById('navAnalytics').classList.toggle('active', view === 'analytics');
+  document.getElementById('navShopping').classList.toggle('active', view === 'shopping');
   if (view === 'analytics') renderAnalytics();
 };
 
@@ -4154,6 +4345,7 @@ startIncomeListener();
 startLoanListener();
 startLoanRepaymentListener();
 startLoanChargesListener();
+startShoppingListener();
 updateLoanChargeFields();
 document.getElementById('incDate').value = today();
 </script>
