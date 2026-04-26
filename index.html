@@ -2695,12 +2695,12 @@ window.deleteLoan = async function(id) {
 window.openLoanEdit = function(id) {
   editingLoanId = editingLoanId === id ? null : id;
   expandedLoanId = id;
-  renderLoanList();
+  renderLoanSection();
 };
 
 window.cancelLoanEdit = function() {
   editingLoanId = null;
-  renderLoanList();
+  renderLoanSection();
 };
 
 window.onEditLoanChargeChange = function(id) {
