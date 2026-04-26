@@ -888,6 +888,10 @@ textarea { resize: vertical; min-height: 58px; }
     </div>
     <div id="loanSectionBody" style="display:none;margin-top:1rem;">
       <div id="loanReminderBanner"></div>
+      <div style="display:flex;gap:0.35rem;margin-bottom:0.9rem;" id="loanSubTabs">
+        <button class="tab active" id="loanTabActive"  onclick="setLoanTab('active')">Active</button>
+        <button class="tab"        id="loanTabRepaid"  onclick="setLoanTab('repaid')">Repaid <span id="loanRepaidCount" style="font-size:0.72rem;margin-left:0.2rem;"></span></button>
+      </div>
       <div class="loan-list" id="loanList">
         <div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>
       </div>
@@ -1613,6 +1617,7 @@ let loanRepayments         = [];
 let loanCharges            = [];
 let expandedLoanId         = null;
 let editingLoanId          = null;
+let loanSubTab             = 'active'; // 'active' | 'repaid'
 let _loanSectionOpen       = false;
 let _loanReminderDismissed = false;
 let _incomeVisible         = false;
@@ -2422,24 +2427,42 @@ function filterLoanEvents(f) {
 function renderLoanSection() {
   renderLoanReminder();
 
+  const activeLoans = loans.filter(l => getLoanOutstanding(l) > 0);
+  const repaidLoans = loans.filter(l => getLoanOutstanding(l) <= 0);
+
   const badge = document.getElementById('loanSectionBadge');
   if (badge) {
-    const activeCount = loans.filter(l => getLoanOutstanding(l) > 0).length;
     const outstanding = getOutstandingDebt();
     badge.textContent = loans.length === 0
       ? ''
-      : activeCount > 0
-        ? `${activeCount} active · ${fmt(outstanding)} outstanding`
+      : activeLoans.length > 0
+        ? `${activeLoans.length} active · ${fmt(outstanding)} outstanding`
         : `${loans.length} loan${loans.length !== 1 ? 's' : ''} · all repaid`;
   }
+
+  // Update repaid count badge on sub-tab
+  const repaidCountEl = document.getElementById('loanRepaidCount');
+  if (repaidCountEl) repaidCountEl.textContent = repaidLoans.length ? `(${repaidLoans.length})` : '';
+
+  // Sync sub-tab button states
+  document.getElementById('loanTabActive')?.classList.toggle('active', loanSubTab === 'active');
+  document.getElementById('loanTabRepaid')?.classList.toggle('active', loanSubTab === 'repaid');
+
+  const visibleLoans = loanSubTab === 'repaid' ? repaidLoans : activeLoans;
 
   const el = document.getElementById('loanList');
   if (!loans.length) {
     el.innerHTML = '<div class="empty-state">No loans recorded. Use the 🏦 Loans tab above to record a loan taken.</div>';
     return;
   }
+  if (!visibleLoans.length) {
+    el.innerHTML = loanSubTab === 'repaid'
+      ? '<div class="empty-state">No fully repaid loans yet.</div>'
+      : '<div class="empty-state">No active loans. All loans have been repaid!</div>';
+    return;
+  }
 
-  el.innerHTML = loans.map(loan => {
+  el.innerHTML = visibleLoans.map(loan => {
     const outstanding = getLoanOutstanding(loan);
     const repaid  = loanRepayments.filter(r => r.loanId === loan.id).reduce((a, r) => a + r.amount, 0);
     const charged = loanCharges.filter(c => c.loanId === loan.id).reduce((a, c) => a + c.amount, 0);
@@ -2839,6 +2862,13 @@ window.toggleIncomeVisibility = function() {
   document.querySelectorAll('#summaryGrid .income-card .stat-value').forEach(el => {
     el.classList.toggle('stat-value-blurred', !_incomeVisible);
   });
+};
+
+window.setLoanTab = function(tab) {
+  loanSubTab = tab;
+  expandedLoanId = null;
+  editingLoanId  = null;
+  renderLoanSection();
 };
 
 window.toggleLoanSection = function() {
