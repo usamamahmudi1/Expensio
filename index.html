@@ -2855,7 +2855,8 @@ window.submitPayment = async function(loanId, interestAmt) {
       await addDoc(collection(db, 'loanCharges'),    { loanId, amount: interestAmt, date, notes: notes || 'Interest', createdAt: Date.now() });
       await addDoc(collection(db, 'loanRepayments'), { loanId, amount: principal,   date, notes: notes || 'Principal', createdAt: Date.now() });
       if (asExpense) {
-        await addDoc(collection(db, 'expenses'), { name: `Loan repayment — ${lenderName}`, amount: principal, category: 'Loan Repayment', date, notes: notes || '', recurring: false, createdAt: Date.now() });
+        const breakdownNote = `Principal ${fmtNum(principal)} + Interest ${fmtNum(interestAmt)}${notes ? ' · ' + notes : ''}`;
+        await addDoc(collection(db, 'expenses'), { name: `Loan repayment — ${lenderName}`, amount, category: 'Loan Repayment', date, notes: breakdownNote, recurring: false, createdAt: Date.now() });
       }
       showToast(`Payment recorded — interest ${fmtNum(interestAmt)}, principal ${fmtNum(principal)}`);
     } else {
