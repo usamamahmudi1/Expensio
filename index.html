@@ -1568,6 +1568,7 @@ const DEFAULT_CATEGORIES = [
   { name: 'Health',          color: '#6b3fa0' },
   { name: 'Entertainment',   color: '#c25c8b' },
   { name: 'Bills & Utilities', color: '#4a5568' },
+  { name: 'Loan Repayment',   color: '#6b3fa0' },
   { name: 'Other',           color: '#8a877e' },
 ];
 
@@ -2613,6 +2614,10 @@ function renderLoanSection() {
             <label>Notes (optional)</label>
             <input type="text" id="repayNotes_${loan.id}" placeholder="e.g. April instalment" style="padding:0.5rem 0.75rem;font-size:0.88rem;" />
           </div>
+          <label style="display:flex;align-items:center;gap:0.55rem;font-size:0.83rem;color:var(--muted);margin-bottom:0.75rem;cursor:pointer;user-select:none;">
+            <input type="checkbox" id="repayAsExpense_${loan.id}" style="width:15px;height:15px;cursor:pointer;" />
+            Also record as an expense (shows in history &amp; affects running balance)
+          </label>
           <button class="loan-repay-btn" onclick="submitPayment('${safeId}',${interestAmt})">Record Payment</button>
         </div>` : '<div style="font-size:0.83rem;color:var(--green);font-weight:600;margin-top:0.5rem;">✓ Fully repaid!</div>';
 
@@ -2831,10 +2836,13 @@ window.onRepayAmountChange = function(loanId, interestAmt) {
 
 // ── Submit payment (payment only OR payment + interest) ────────
 window.submitPayment = async function(loanId, interestAmt) {
-  const amount = parseFloat(document.getElementById('repayAmount_' + loanId)?.value);
-  const date   = document.getElementById('repayDate_' + loanId)?.value;
-  const notes  = document.getElementById('repayNotes_' + loanId)?.value.trim() || '';
-  const mode   = document.querySelector(`input[name="repayMode_${loanId}"]:checked`)?.value || 'only';
+  const amount      = parseFloat(document.getElementById('repayAmount_' + loanId)?.value);
+  const date        = document.getElementById('repayDate_' + loanId)?.value;
+  const notes       = document.getElementById('repayNotes_' + loanId)?.value.trim() || '';
+  const mode        = document.querySelector(`input[name="repayMode_${loanId}"]:checked`)?.value || 'only';
+  const asExpense   = document.getElementById('repayAsExpense_' + loanId)?.checked || false;
+  const loan        = loans.find(l => l.id === loanId);
+  const lenderName  = loan?.lender || 'Loan';
 
   if (!amount || amount <= 0) { showToast('Enter a valid amount.'); return; }
   if (!date)                  { showToast('Please pick a date.'); return; }
@@ -2846,9 +2854,15 @@ window.submitPayment = async function(loanId, interestAmt) {
       if (principal <= 0) { showToast(`Total must exceed interest (${fmtNum(interestAmt)}).`); setSyncStatus('synced', 'Saved'); return; }
       await addDoc(collection(db, 'loanCharges'),    { loanId, amount: interestAmt, date, notes: notes || 'Interest', createdAt: Date.now() });
       await addDoc(collection(db, 'loanRepayments'), { loanId, amount: principal,   date, notes: notes || 'Principal', createdAt: Date.now() });
+      if (asExpense) {
+        await addDoc(collection(db, 'expenses'), { name: `Loan repayment — ${lenderName}`, amount: principal, category: 'Loan Repayment', date, notes: notes || '', recurring: false, createdAt: Date.now() });
+      }
       showToast(`Payment recorded — interest ${fmtNum(interestAmt)}, principal ${fmtNum(principal)}`);
     } else {
       await addDoc(collection(db, 'loanRepayments'), { loanId, amount, date, notes, createdAt: Date.now() });
+      if (asExpense) {
+        await addDoc(collection(db, 'expenses'), { name: `Loan repayment — ${lenderName}`, amount, category: 'Loan Repayment', date, notes: notes || '', recurring: false, createdAt: Date.now() });
+      }
       showToast('Payment recorded!');
     }
     expandedLoanId = loanId;
