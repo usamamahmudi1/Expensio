@@ -553,6 +553,18 @@ textarea { resize: vertical; min-height: 58px; }
 .kpi-card.pos .kpi-value { color: var(--green); }
 .kpi-card.neg .kpi-value { color: var(--accent); }
 
+.runway-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.runway-card.pos { border-color: var(--green); background: var(--green-soft); }
+.runway-card.neg { border-color: var(--accent); background: var(--red-soft); }
+.runway-card.no-budget { border-style: dashed; }
+.runway-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
+.runway-value { font-family: 'DM Serif Display', serif; font-size: 2rem; line-height: 1; }
+.runway-card.pos .runway-value { color: var(--green); }
+.runway-card.neg .runway-value { color: var(--accent); }
+.runway-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.35rem; line-height: 1.5; }
+.runway-right { text-align: right; flex-shrink: 0; }
+.runway-set-btn { padding: 0.45rem 1.1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--ink); color: var(--paper); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+
 .a-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; }
 @media (max-width: 680px) { .a-charts-grid { grid-template-columns: 1fr; } }
 .a-chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
@@ -977,6 +989,8 @@ textarea { resize: vertical; min-height: 58px; }
       <button class="a-period-btn" id="apYear"  onclick="setAnalyticsPeriod('year')">This Year</button>
       <button class="a-period-btn" id="apAll"   onclick="setAnalyticsPeriod('all')">All Time</button>
     </div>
+
+    <div id="dailyRunwayCard" style="margin-bottom:1.25rem;"></div>
 
     <div class="kpi-grid" id="kpiGrid"></div>
 
@@ -4272,6 +4286,7 @@ function getAnalyticsData() {
 
 function renderAnalytics() {
   const { exp, inc, start, end } = getAnalyticsData();
+  renderDailyRunway();
   renderAKPIs(exp, inc, start, end);
   renderAGroupedChart(exp, inc, start, end);
   renderADonut(exp);
@@ -4279,6 +4294,63 @@ function renderAnalytics() {
   renderABalanceTrend(exp, inc, start, end);
   renderAInsights(exp, inc, start, end);
   renderASuggestions(exp, inc, start, end);
+}
+
+function renderDailyRunway() {
+  const el = document.getElementById('dailyRunwayCard');
+  if (!el) return;
+
+  if (!budget) {
+    el.innerHTML = `
+      <div class="runway-card no-budget">
+        <div>
+          <div class="runway-label">Daily Runway</div>
+          <div style="font-size:0.88rem;color:var(--muted);margin-top:0.2rem;">Set a monthly budget to see your daily spending allowance.</div>
+        </div>
+        <button class="runway-set-btn" onclick="openBudgetModal()">Set Budget</button>
+      </div>`;
+    return;
+  }
+
+  const now = new Date();
+  const { cycleStart, cycleEnd } = getMonthRange();
+
+  // Expenses in the current cycle
+  const cycleSpent = expenses
+    .filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= cycleStart && d <= cycleEnd; })
+    .reduce((a, e) => a + e.amount, 0);
+
+  const remaining = budget - cycleSpent;
+
+  // Days remaining: from today (inclusive) to cycleEnd (inclusive)
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const cycleEndDay   = new Date(cycleEnd.getFullYear(), cycleEnd.getMonth(), cycleEnd.getDate());
+  const daysLeft = Math.max(1, Math.round((cycleEndDay - todayMidnight) / 864e5) + 1);
+
+  const dailyRunway = remaining / daysLeft;
+  const isNeg = dailyRunway < 0;
+  const cls   = isNeg ? 'neg' : 'pos';
+
+  // Cycle date range label
+  const fmtD = d => d.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+  const cycleLabel = `${fmtD(cycleStart)} – ${fmtD(cycleEnd)}`;
+
+  el.innerHTML = `
+    <div class="runway-card ${cls}">
+      <div>
+        <div class="runway-label">Daily Runway</div>
+        <div class="runway-value">${isNeg ? '-' : ''}${fmt(Math.abs(dailyRunway))}<span style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:400;color:var(--muted);margin-left:0.3rem;">/day</span></div>
+        <div class="runway-meta">
+          ${isNeg ? 'Over budget by ' + fmt(Math.abs(remaining)) : fmt(remaining) + ' remaining'} · ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left in cycle
+        </div>
+      </div>
+      <div class="runway-right">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Budget cycle</div>
+        <div style="font-size:0.82rem;font-weight:600;color:var(--muted);">${cycleLabel}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">Budget: ${fmt(budget)} · Spent: ${fmt(cycleSpent)}</div>
+        <button class="runway-set-btn" style="margin-top:0.6rem;background:transparent;color:var(--muted);border-color:var(--border);" onclick="openBudgetModal()">Edit budget</button>
+      </div>
+    </div>`;
 }
 
 function renderAKPIs(exp, inc, start, end) {
