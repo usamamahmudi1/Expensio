@@ -575,6 +575,9 @@ textarea { resize: vertical; min-height: 58px; }
 .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
 @media (max-width: 680px) { .insight-grid { grid-template-columns: 1fr; } }
 .insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem; display: flex; gap: 0.8rem; align-items: flex-start; }
+.insight-card.positive { border-color: var(--green); background: var(--green-soft); }
+.insight-card.warning  { border-color: var(--accent); background: var(--red-soft); }
+.insight-card.amber    { border-color: var(--amber); background: var(--amber-soft); }
 .insight-icon { font-size: 1.45rem; flex-shrink: 0; line-height: 1; margin-top: 0.1rem; }
 .insight-title { font-weight: 600; font-size: 0.84rem; color: var(--ink); margin-bottom: 0.25rem; }
 .insight-text { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
@@ -1015,6 +1018,9 @@ textarea { resize: vertical; min-height: 58px; }
 
     <div class="a-section-title">Key Insights</div>
     <div class="insight-grid" id="insightGrid"></div>
+
+    <div class="a-section-title">Smart Spending Insights</div>
+    <div class="insight-grid" id="smartInsightGrid"></div>
 
     <div class="a-section-title">Smart Suggestions</div>
     <div class="suggestion-list" id="suggestionList"></div>
@@ -4293,6 +4299,7 @@ function renderAnalytics() {
   renderADow(exp);
   renderABalanceTrend(exp, inc, start, end);
   renderAInsights(exp, inc, start, end);
+  renderSmartInsights();
   renderASuggestions(exp, inc, start, end);
 }
 
@@ -4577,6 +4584,107 @@ function renderAInsights(exp, inc, start, end) {
         <div class="insight-body"><div class="insight-title">${ins.title}</div><div class="insight-text">${ins.text}</div></div>
       </div>`).join('')
     : '<div style="color:var(--muted);font-size:0.85rem;grid-column:1/-1;padding:1rem 0;">Add some expenses to see insights.</div>';
+}
+
+function renderSmartInsights() {
+  const el = document.getElementById('smartInsightGrid');
+  if (!el) return;
+  const dowNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const insights = [];
+
+  // ── 1. Most expensive day of the week (with ratio) ────────────
+  if (expenses.length >= 7) {
+    const dowOcc = Array(7).fill(0), dowTot = Array(7).fill(0);
+    expenses.forEach(e => {
+      const d = new Date(e.date + 'T12:00:00').getDay();
+      dowOcc[d]++; dowTot[d] += e.amount;
+    });
+    const dowAvg = dowTot.map((t, i) => dowOcc[i] > 0 ? t / dowOcc[i] : 0);
+    const maxDow = dowAvg.indexOf(Math.max(...dowAvg));
+    const nonZero = dowAvg.filter(v => v > 0);
+    const minVal  = Math.min(...nonZero);
+    const minDow  = dowAvg.indexOf(minVal);
+    const ratio   = minVal > 0 ? (dowAvg[maxDow] / minVal) : null;
+    if (ratio !== null && maxDow !== minDow) {
+      const ratioStr = ratio >= 1.5 ? `${ratio.toFixed(1)}x more` : `${Math.round((ratio - 1) * 100)}% more`;
+      insights.push({ icon: '📅', cls: 'amber', title: 'Most expensive day of the week',
+        text: `You spend ${ratioStr} on ${dowNames[maxDow]}s than ${dowNames[minDow]}s on average — ${fmt(dowAvg[maxDow])} vs ${fmt(dowAvg[minDow])} per visit.` });
+    }
+  }
+
+  // ── 2. Biggest splurge this month ────────────────────────────
+  const { cycleStart: cs, cycleEnd: ce } = getMonthRange();
+  const thisMonth = expenses.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= cs && d <= ce; });
+  const splurge   = thisMonth.reduce((a, e) => (!a || e.amount > a.amount) ? e : a, null);
+  const monthTotal = thisMonth.reduce((a, e) => a + e.amount, 0);
+  if (splurge) {
+    const pct  = monthTotal > 0 ? Math.round((splurge.amount / monthTotal) * 100) : 0;
+    const dStr = new Date(splurge.date + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+    insights.push({ icon: '💸', cls: 'warning', title: 'Biggest splurge this month',
+      text: `"${splurge.name}" on ${dStr} was your largest single expense this cycle — ${fmt(splurge.amount)}, making up ${pct}% of your total monthly spend.` });
+  }
+
+  // ── 3. Spending velocity vs last month ───────────────────────
+  const { cycleStart: prevCs } = getMonthRange(-1);
+  const now = new Date(); now.setHours(23, 59, 59, 999);
+  const daysElapsed = Math.round((now - cs) / 864e5);
+  const prevEnd = new Date(prevCs); prevEnd.setDate(prevCs.getDate() + daysElapsed); prevEnd.setHours(23, 59, 59, 999);
+  const currentPace = thisMonth.reduce((a, e) => { const d = new Date(e.date + 'T12:00:00'); return d <= now ? a + e.amount : a; }, 0);
+  const prevPace    = expenses.filter(e => { const d = new Date(e.date + 'T12:00:00'); return d >= prevCs && d <= prevEnd; }).reduce((a, e) => a + e.amount, 0);
+  if (prevPace > 0 && daysElapsed >= 3) {
+    const diff   = currentPace - prevPace;
+    const pct    = Math.abs(Math.round((diff / prevPace) * 100));
+    const faster = diff > 0;
+    insights.push({
+      icon: faster ? '🚀' : '🐢',
+      cls:  faster ? 'warning' : 'positive',
+      title: 'Spending velocity',
+      text: faster
+        ? `You're spending ${pct}% faster than last month at this same point — ${fmt(currentPace)} now vs ${fmt(prevPace)} then. Watch the pace.`
+        : `You're ${pct}% slower than last month at this point — ${fmt(currentPace)} vs ${fmt(prevPace)}. You're ahead of the curve!`
+    });
+  }
+
+  // ── 4. Cheapest week ever ─────────────────────────────────────
+  const weekMap = {};
+  expenses.forEach(e => {
+    const d   = new Date(e.date + 'T12:00:00');
+    const dow = (d.getDay() + 6) % 7;
+    const mon = new Date(d); mon.setDate(d.getDate() - dow); mon.setHours(0,0,0,0);
+    const key = mon.toISOString().slice(0, 10);
+    weekMap[key] = (weekMap[key] || 0) + e.amount;
+  });
+  const weeks = Object.entries(weekMap);
+  if (weeks.length >= 4) {
+    const [cheapKey, cheapAmt] = weeks.reduce((a, b) => a[1] <= b[1] ? a : b);
+    const curDow = (now.getDay() + 6) % 7;
+    const curMon = new Date(now); curMon.setDate(now.getDate() - curDow); curMon.setHours(0,0,0,0);
+    const currentWeekKey  = curMon.toISOString().slice(0, 10);
+    const currentWeekSpend = weekMap[currentWeekKey] || 0;
+    const isCheapestNow   = cheapKey === currentWeekKey;
+    const weekLabel = new Date(cheapKey + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (isCheapestNow) {
+      insights.push({ icon: '🌱', cls: 'positive', title: 'Your cheapest week ever — so far!',
+        text: `This week you've only spent ${fmt(currentWeekSpend)}, making it your personal best. Keep the momentum going!` });
+    } else {
+      const allSorted = [...weeks].sort((a, b) => a[1] - b[1]);
+      const rank = allSorted.findIndex(w => w[0] === currentWeekKey) + 1;
+      if (rank > 0 && rank <= 3) {
+        insights.push({ icon: '🥈', cls: 'positive', title: `Top ${rank === 1 ? '1' : rank}${rank === 2 ? 'nd' : 'rd'} cheapest week ever`,
+          text: `This week (${fmt(currentWeekSpend)}) is one of your best spending weeks. Your all-time cheapest was ${fmt(cheapAmt)} (${weekLabel}).` });
+      } else {
+        insights.push({ icon: '🏅', cls: '', title: 'Best week on record',
+          text: `Your cheapest week ever was the week of ${weekLabel} — just ${fmt(cheapAmt)} spent. Can you beat it?` });
+      }
+    }
+  }
+
+  el.innerHTML = insights.length
+    ? insights.map(ins => `<div class="insight-card ${ins.cls || ''}">
+        <div class="insight-icon">${ins.icon}</div>
+        <div class="insight-body"><div class="insight-title">${ins.title}</div><div class="insight-text">${ins.text}</div></div>
+      </div>`).join('')
+    : '<div style="color:var(--muted);font-size:0.85rem;grid-column:1/-1;padding:1rem 0;">Add more transactions over time to unlock spending insights.</div>';
 }
 
 function renderASuggestions(exp, inc, start, end) {
