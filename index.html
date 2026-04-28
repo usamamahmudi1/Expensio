@@ -4662,7 +4662,10 @@ function renderSmartInsights() {
     const currentWeekKey  = curMon.toISOString().slice(0, 10);
     const currentWeekSpend = weekMap[currentWeekKey] || 0;
     const isCheapestNow   = cheapKey === currentWeekKey;
-    const weekLabel = new Date(cheapKey + 'T12:00:00').toLocaleDateString('en-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+    const cheapMon = new Date(cheapKey + 'T12:00:00');
+    const cheapSun = new Date(cheapMon); cheapSun.setDate(cheapMon.getDate() + 6);
+    const fmtW = d => d.toLocaleDateString('en-SE', { day: 'numeric', month: 'short' });
+    const weekLabel = `${fmtW(cheapMon)} – ${fmtW(cheapSun)} ${cheapSun.getFullYear()}`;
     if (isCheapestNow) {
       insights.push({ icon: '🌱', cls: 'positive', title: 'Your cheapest week ever — so far!',
         text: `This week you've only spent ${fmt(currentWeekSpend)}, making it your personal best. Keep the momentum going!` });
