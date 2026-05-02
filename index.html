@@ -4281,7 +4281,7 @@ window.handleScanFile = async function(file) {
     document.getElementById('scanProgressFill').style.width = '100%';
     document.getElementById('scanStatusText').textContent = 'Done!';
 
-    const parsed = parseReceiptText(result.data.text);
+    const parsed = parseReceiptText(result.data.text, result.data);
     const confidence = Math.round(result.data.confidence);
 
     setTimeout(() => {
@@ -4304,7 +4304,48 @@ window.handleScanFile = async function(file) {
   }
 };
 
-function parseReceiptText(raw) {
+function extractMerchantFromData(data) {
+  // Use word bounding boxes to find the largest (boldest) text — almost always the merchant name
+  if (!data || !data.words || !data.words.length) return '';
+
+  const words = data.words.filter(w => w.text.trim().length > 1 && w.confidence > 25);
+  if (!words.length) return '';
+
+  // Receipt height from last word position
+  const maxY = Math.max(...words.map(w => w.bbox.y1));
+  // Only look at the top 30% of the receipt for the merchant
+  const topCutoff = maxY * 0.30;
+  const topWords  = words.filter(w => w.bbox.y0 < topCutoff);
+  const pool      = topWords.length >= 2 ? topWords : words; // fallback to all if top is sparse
+
+  // Find the tallest word height in the pool
+  const maxH = Math.max(...pool.map(w => w.bbox.y1 - w.bbox.y0));
+  // Keep words whose height is at least 65% of the tallest — these are the "big" words
+  const prominent = pool.filter(w => (w.bbox.y1 - w.bbox.y0) >= maxH * 0.65
+    && !/^\d+$/.test(w.text) // skip pure numbers
+    && w.text.length > 1);
+
+  if (!prominent.length) return '';
+
+  // Sort by position: top-to-bottom, then left-to-right
+  prominent.sort((a, b) => a.bbox.y0 - b.bbox.y0 || a.bbox.x0 - b.bbox.x0);
+
+  // Group into lines by proximity (words within 8px vertically = same line)
+  const lineGroups = [];
+  for (const w of prominent) {
+    const last = lineGroups[lineGroups.length - 1];
+    if (!last || Math.abs(w.bbox.y0 - last[0].bbox.y0) > 10) {
+      lineGroups.push([w]);
+    } else {
+      last.push(w);
+    }
+  }
+
+  // Take the first line group and join its words
+  return lineGroups[0].map(w => w.text).join(' ').trim();
+}
+
+function parseReceiptText(raw, data) {
   // ── Amount ───────────────────────────────────────────────────
   let amount = null;
   // Keyword patterns (Swedish + English), take last match (totals usually at bottom)
@@ -4340,12 +4381,15 @@ function parseReceiptText(raw) {
     if (m) { const d = fn(m); if (!isNaN(new Date(d))) { date = d; break; } }
   }
 
-  // ── Merchant ─────────────────────────────────────────────────
-  const lines = raw.split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length > 2 && l.length < 55 && !/^\d/.test(l) && !/^[\W]+$/.test(l)
-      && !/receipt|kvitto|invoice|faktura|tax|moms|vat|org\.?nr|reg\.?nr/i.test(l));
-  const merchant = lines[0] || '';
+  // ── Merchant: bbox-based first, text fallback ─────────────────
+  let merchant = extractMerchantFromData(data);
+  if (!merchant) {
+    // Text fallback: first clean line in top portion of raw text
+    const skipRe = /receipt|kvitto|invoice|faktura|tax|moms|vat|org\.?nr|reg\.?nr|tel:|www\.|http/i;
+    const lines = raw.split('\n').map(l => l.trim())
+      .filter(l => l.length > 2 && l.length < 55 && !/^\d/.test(l) && !/^[\W_]+$/.test(l) && !skipRe.test(l));
+    merchant = lines[0] || '';
+  }
 
   return { amount, date, merchant };
 }
