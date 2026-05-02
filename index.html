@@ -413,6 +413,35 @@ textarea { resize: vertical; min-height: 58px; }
 .form-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .form-tab-voice { margin-left: auto; padding: 0 0.35rem 0 0.5rem; display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--accent); background: none; border: none; cursor: pointer; }
 .form-tab-voice:hover { text-decoration: underline; }
+.form-tab-scan { padding: 0 0.5rem 0 0.35rem; display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; }
+.form-tab-scan:hover { color: var(--ink); }
+
+/* ── Receipt scanner ─────────────────────────────────────────── */
+.scan-modal-inner { width: min(480px, 94vw) !important; }
+.scan-drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2.2rem 1rem; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 1rem; }
+.scan-drop-zone:hover { border-color: var(--accent); background: var(--accent-soft); }
+.scan-drop-icon { font-size: 2.2rem; margin-bottom: 0.5rem; }
+.scan-drop-text { font-size: 0.88rem; color: var(--muted); margin-bottom: 0.75rem; }
+.scan-drop-btns { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+.scan-img-btn { padding: 0.5rem 1.1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: background 0.12s; }
+.scan-img-btn:hover { background: var(--border); }
+.scan-img-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.scan-img-btn.primary:hover { opacity: 0.88; }
+.scan-preview-wrap { text-align: center; margin-bottom: 1rem; }
+.scan-preview { max-width: 100%; max-height: 200px; border-radius: 10px; object-fit: contain; border: 1px solid var(--border); }
+.scan-progress-wrap { background: var(--border); border-radius: 99px; height: 6px; margin: 0.6rem 0 0.3rem; overflow: hidden; }
+.scan-progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s; }
+.scan-status { font-size: 0.78rem; color: var(--muted); text-align: center; margin-bottom: 0.75rem; }
+.scan-result-section { margin-bottom: 1rem; }
+.scan-result-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 0.6rem; }
+.scan-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.scan-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.scan-field.wide { grid-column: 1 / -1; }
+.scan-field label { font-size: 0.71rem; font-weight: 600; color: var(--muted); }
+.scan-field input { padding: 0.45rem 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; }
+.scan-field input:focus { outline: none; border-color: var(--accent); }
+.scan-field input.found { border-color: var(--green); }
+.scan-confidence { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 0.3rem; }
 
 .stat-card.income-card { background: var(--green-soft); border-color: #b0d4be; cursor: pointer; }
 .stat-card.income-card .stat-value { color: var(--green); transition: filter 0.2s; }
@@ -736,6 +765,13 @@ textarea { resize: vertical; min-height: 58px; }
         <button class="form-tab active" id="tabExpense" onclick="setFormMode('expense')">Add Expense</button>
         <button class="form-tab" id="tabIncome" onclick="setFormMode('income')">Record Income</button>
         <button class="form-tab" id="tabLoan" onclick="setFormMode('loan')">🏦 Loans</button>
+        <button class="form-tab-scan" onclick="openScanModal()" title="Scan a receipt">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Scan
+        </button>
         <button class="form-tab-voice" onclick="startVoiceInput()" title="Add via voice">
           <svg width="11" height="14" viewBox="0 0 13 17" fill="currentColor">
             <rect x="3.5" y="0" width="6" height="9.5" rx="3"/>
@@ -1049,6 +1085,69 @@ textarea { resize: vertical; min-height: 58px; }
     <div id="shopList"></div>
   </div><!-- /shoppingView -->
 
+</div>
+
+<!-- Scan Receipt Modal -->
+<div class="modal-backdrop" id="scanModal">
+  <div class="modal scan-modal-inner">
+    <div class="modal-title">Scan Receipt</div>
+
+    <!-- Step 1: Upload -->
+    <div id="scanStep1">
+      <div class="scan-drop-zone" id="scanDropZone" onclick="document.getElementById('scanFileInput').click()">
+        <div class="scan-drop-icon">🧾</div>
+        <div class="scan-drop-text">Take a photo or upload an image of your receipt</div>
+        <div class="scan-drop-btns">
+          <button class="scan-img-btn" onclick="event.stopPropagation();document.getElementById('scanCameraInput').click()">📷 Camera</button>
+          <button class="scan-img-btn" onclick="event.stopPropagation();document.getElementById('scanFileInput').click()">🖼 Gallery / File</button>
+        </div>
+      </div>
+      <input type="file" id="scanFileInput"   accept="image/*" style="display:none;" onchange="handleScanFile(this.files[0])" />
+      <input type="file" id="scanCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleScanFile(this.files[0])" />
+    </div>
+
+    <!-- Step 2: Preview + OCR progress -->
+    <div id="scanStep2" style="display:none;">
+      <div class="scan-preview-wrap">
+        <img id="scanPreviewImg" class="scan-preview" alt="Receipt preview" />
+      </div>
+      <div id="scanProgressWrap">
+        <div class="scan-progress-wrap"><div class="scan-progress-fill" id="scanProgressFill" style="width:0%"></div></div>
+        <div class="scan-status" id="scanStatusText">Preparing…</div>
+      </div>
+    </div>
+
+    <!-- Step 3: Extracted results -->
+    <div id="scanStep3" style="display:none;">
+      <div class="scan-preview-wrap">
+        <img id="scanPreviewImg2" class="scan-preview" alt="Receipt" style="max-height:120px;" />
+      </div>
+      <div class="scan-result-section">
+        <div class="scan-result-title">Extracted details — review &amp; edit before applying</div>
+        <div class="scan-field-grid">
+          <div class="scan-field wide">
+            <label>Item / Merchant name</label>
+            <input type="text" id="scanResultName" placeholder="e.g. Grocery Store" />
+          </div>
+          <div class="scan-field">
+            <label>Amount</label>
+            <input type="number" id="scanResultAmount" placeholder="0" min="0" step="0.01" />
+          </div>
+          <div class="scan-field">
+            <label>Date</label>
+            <input type="date" id="scanResultDate" />
+          </div>
+        </div>
+        <div class="scan-confidence" id="scanConfidenceNote"></div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="applyScanResult()" style="flex:1;">Apply to form</button>
+        <button class="btn btn-outline" onclick="resetScan()">Scan again</button>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" style="margin-top:0.75rem;width:100%;" onclick="closeScanModal()">Cancel</button>
+  </div>
 </div>
 
 <!-- Budget Modal -->
@@ -4117,6 +4216,153 @@ window.guideNav = function(dir) {
   }
   _guideIndex = Math.max(0, Math.min(list.length - 1, _guideIndex + dir));
   _renderGuideCard();
+};
+
+// ── Receipt Scanner ─────────────────────────────────────────────
+
+let _tesseractReady = false;
+let _scanObjectURL  = null;
+
+function loadTesseract() {
+  if (_tesseractReady) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/tesseract.js@v4/dist/tesseract.min.js';
+    s.onload  = () => { _tesseractReady = true; resolve(); };
+    s.onerror = () => reject(new Error('Failed to load Tesseract.js'));
+    document.head.appendChild(s);
+  });
+}
+
+window.openScanModal = function() {
+  resetScan();
+  document.getElementById('scanModal').classList.add('open');
+};
+window.closeScanModal = function() {
+  document.getElementById('scanModal').classList.remove('open');
+  if (_scanObjectURL) { URL.revokeObjectURL(_scanObjectURL); _scanObjectURL = null; }
+};
+window.resetScan = function() {
+  document.getElementById('scanStep1').style.display = '';
+  document.getElementById('scanStep2').style.display = 'none';
+  document.getElementById('scanStep3').style.display = 'none';
+  document.getElementById('scanProgressFill').style.width = '0%';
+  document.getElementById('scanFileInput').value   = '';
+  document.getElementById('scanCameraInput').value = '';
+};
+
+window.handleScanFile = async function(file) {
+  if (!file) return;
+  if (_scanObjectURL) URL.revokeObjectURL(_scanObjectURL);
+  _scanObjectURL = URL.createObjectURL(file);
+
+  document.getElementById('scanStep1').style.display = 'none';
+  document.getElementById('scanStep2').style.display = '';
+  document.getElementById('scanStep3').style.display = 'none';
+  document.getElementById('scanPreviewImg').src  = _scanObjectURL;
+  document.getElementById('scanStatusText').textContent = 'Loading OCR engine…';
+  document.getElementById('scanProgressFill').style.width = '5%';
+
+  try {
+    await loadTesseract();
+    document.getElementById('scanStatusText').textContent = 'Recognising text…';
+    document.getElementById('scanProgressFill').style.width = '20%';
+
+    const result = await Tesseract.recognize(_scanObjectURL, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(20 + m.progress * 70);
+          document.getElementById('scanProgressFill').style.width = pct + '%';
+          document.getElementById('scanStatusText').textContent = `Recognising… ${Math.round(m.progress * 100)}%`;
+        }
+      }
+    });
+
+    document.getElementById('scanProgressFill').style.width = '100%';
+    document.getElementById('scanStatusText').textContent = 'Done!';
+
+    const parsed = parseReceiptText(result.data.text);
+    const confidence = Math.round(result.data.confidence);
+
+    setTimeout(() => {
+      document.getElementById('scanStep2').style.display = 'none';
+      document.getElementById('scanStep3').style.display = '';
+      document.getElementById('scanPreviewImg2').src = _scanObjectURL;
+      document.getElementById('scanResultName').value   = parsed.merchant || '';
+      document.getElementById('scanResultAmount').value = parsed.amount   != null ? parsed.amount : '';
+      document.getElementById('scanResultDate').value   = parsed.date     || today();
+      document.getElementById('scanResultName').classList.toggle('found',   !!parsed.merchant);
+      document.getElementById('scanResultAmount').classList.toggle('found', parsed.amount != null);
+      document.getElementById('scanResultDate').classList.toggle('found',   !!parsed.date);
+      document.getElementById('scanConfidenceNote').textContent =
+        `OCR confidence: ${confidence}%${confidence < 60 ? ' — low quality image, please verify fields' : ''}`;
+    }, 400);
+
+  } catch(e) {
+    document.getElementById('scanStatusText').textContent = 'Error: ' + (e.message || 'OCR failed');
+    document.getElementById('scanProgressFill').style.background = 'var(--accent)';
+  }
+};
+
+function parseReceiptText(raw) {
+  // ── Amount ───────────────────────────────────────────────────
+  let amount = null;
+  // Keyword patterns (Swedish + English), take last match (totals usually at bottom)
+  const kwPatterns = [
+    /(?:total|totalt|grand total|subtotal|summa|att betala|to pay|amount due|belopp|sum)[:\s]*(?:sek|kr)?\s*([\d\s]+[.,]\d{2})/gi,
+    /(?:sek|kr)\s*([\d\s]+[.,]\d{2})/gi,
+  ];
+  for (const pat of kwPatterns) {
+    const hits = [...raw.matchAll(pat)];
+    if (hits.length) {
+      const raw2 = hits[hits.length - 1][1].replace(/\s/g, '').replace(',', '.');
+      const n = parseFloat(raw2);
+      if (!isNaN(n) && n > 0 && n < 10000000) { amount = Math.round(n * 100) / 100; break; }
+    }
+  }
+  // Fallback: collect all decimal numbers, return max (totals tend to be largest)
+  if (amount == null) {
+    const nums = [...raw.matchAll(/\b(\d{1,7}[.,]\d{2})\b/g)]
+      .map(m => parseFloat(m[1].replace(',', '.')))
+      .filter(n => n > 0 && n < 10000000);
+    if (nums.length) amount = Math.round(Math.max(...nums) * 100) / 100;
+  }
+
+  // ── Date ─────────────────────────────────────────────────────
+  let date = null;
+  const dateTrys = [
+    { re: /(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/, fn: m => `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` },
+    { re: /(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/, fn: m => `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` },
+    { re: /(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2})\b/, fn: m => `20${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` },
+  ];
+  for (const { re, fn } of dateTrys) {
+    const m = raw.match(re);
+    if (m) { const d = fn(m); if (!isNaN(new Date(d))) { date = d; break; } }
+  }
+
+  // ── Merchant ─────────────────────────────────────────────────
+  const lines = raw.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 2 && l.length < 55 && !/^\d/.test(l) && !/^[\W]+$/.test(l)
+      && !/receipt|kvitto|invoice|faktura|tax|moms|vat|org\.?nr|reg\.?nr/i.test(l));
+  const merchant = lines[0] || '';
+
+  return { amount, date, merchant };
+}
+
+window.applyScanResult = function() {
+  const name   = document.getElementById('scanResultName').value.trim();
+  const amount = document.getElementById('scanResultAmount').value;
+  const date   = document.getElementById('scanResultDate').value;
+
+  setFormMode('expense');
+  if (name)   document.getElementById('expName').value   = name;
+  if (amount) document.getElementById('expAmount').value = amount;
+  if (date)   document.getElementById('expDate').value   = date;
+
+  closeScanModal();
+  document.getElementById('expName').focus();
+  showToast('Receipt data applied — review and save.');
 };
 
 // ── Shopping List ───────────────────────────────────────────────
